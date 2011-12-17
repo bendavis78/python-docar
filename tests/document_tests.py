@@ -19,6 +19,10 @@ class FruitBasket(documents.Document):
     name = fields.StringField()
 
 
+class SpecialFruitBasket(FruitBasket):
+    is_present = fields.BooleanField()
+
+
 class when_a_document_gets_instantiated(unittest.TestCase):
     def setUp(self):
         self.basket = FruitBasket()
@@ -53,3 +57,15 @@ class when_a_representation_is_parsed(unittest.TestCase):
     def it_has_the_fields_bound(self):
         eq_(True, self.basket.is_rotten)
         eq_('Lovely Basket', self.basket.name)
+
+
+class when_a_document_inherits_from_another_document(unittest.TestCase):
+    def setUp(self):
+        self.basket = SpecialFruitBasket()
+
+    def it_inherits_all_fields(self):
+        # that should be the total amount of fields for the inherited document
+        eq_(3, len(self.basket.fields))
+        eq_(True, 'is_present' in self.basket.fields)
+        eq_(True, 'is_rotten' in self.basket.fields)
+        eq_(True, 'name' in self.basket.fields)
