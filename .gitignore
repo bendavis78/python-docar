@@ -3,7 +3,7 @@ cover
 docs/_build
 dist
 build
-src/documents.egg-info
+src/roa.egg-info
 src/.ropeproject
 *.pyc
 *.swp
