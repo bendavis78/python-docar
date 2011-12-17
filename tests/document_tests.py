@@ -38,12 +38,12 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_(True, 'is_rotten' in self.basket.fields)
         eq_(True, 'name' in self.basket.fields)
 
-    def it_has_instances_of_the_fields(self):
+    def it_has_an_attribute_for_each_field(self):
         eq_(True, hasattr(self.basket, 'name'))
-        eq_(fields.StringField, type(self.basket.name))
+        eq_(types.NoneType, type(self.basket.name))
 
         eq_(True, hasattr(self.basket, 'is_rotten'))
-        eq_(fields.BooleanField, type(self.basket.is_rotten))
+        eq_(types.NoneType, type(self.basket.is_rotten))
 
 
 class when_a_representation_is_parsed(unittest.TestCase):

@@ -5,6 +5,8 @@ from roa.fields import Field
 
 
 class DocumentBase(type):
+    """Metaclass for the Document class."""
+
     def __new__(cls, name, bases, attrs):
         # populate the fields dict
         fields = [
@@ -17,12 +19,13 @@ class DocumentBase(type):
 
         # create the fields on the instance document
         for field_name, val in attrs['fields'].items():
-            setattr(new_class, field_name, val)
+            setattr(new_class, field_name, None)
 
         return new_class
 
 
 class Document(object):
+    """A document is a represantation."""
     __metaclass__ = DocumentBase
 
     def __init__(self, data=None):
