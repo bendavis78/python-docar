@@ -1,0 +1,10 @@
+.coverage
+cover
+docs/_build
+dist
+build
+src/documents.egg-info
+src/.ropeproject
+*.pyc
+*.swp
+*.egg
