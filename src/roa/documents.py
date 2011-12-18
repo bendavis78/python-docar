@@ -2,7 +2,7 @@ import json
 import types
 import copy
 
-from roa.fields import Field
+from roa.fields import Field, NOT_PROVIDED
 
 
 class DocumentBase(type):
@@ -26,7 +26,10 @@ class DocumentBase(type):
 
         # create the fields on the instance document
         for field_name, val in attrs['base_fields'].items():
-            setattr(new_class, field_name, None)
+            if val.default == NOT_PROVIDED:
+                setattr(new_class, field_name, None)
+            else:
+                setattr(new_class, field_name, val.default)
 
         return new_class
 
@@ -36,25 +39,35 @@ class Document(object):
     __metaclass__ = DocumentBase
 
     def __init__(self, data=None):
+        """Create a new document presentation of a resource.
+
+        :param data: Initial values to use for this document.
+        :type data: dict
+
+        """
         self.fields = copy.deepcopy(self.base_fields)
 
         if not data:
             return
 
-        if type(data) is types.StringType:
-            # Lets assume its a valid json string
-            #FIXME: except json errors
-            data = json.loads(data)
+        if type(data) is not types.DictType:
+            return
 
-            # set the preloaded attributes
-            for field_name, val in data.items():
-                # We set simple fields, defer references and collections
-                if type(val) == types.UnicodeType or \
-                        type(val) == types.BooleanType:
-                    setattr(self, field_name, val)
+        # set the preloaded attributes
+        for field_name, val in data.items():
+            # We set simple fields, defer references and collections
+            if type(val) == types.UnicodeType or \
+                    type(val) == types.StringType or \
+                    type(val) == types.BooleanType:
+                setattr(self, field_name, val)
 
     def to_json(self):
-        pass
+        data = {}
+
+        for field_name in self.fields.keys():
+            data[field_name] = getattr(self, field_name)
+
+        return json.dumps(data)
 
     def save(self):
         pass

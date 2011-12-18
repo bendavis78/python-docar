@@ -8,10 +8,10 @@ from roa import documents
 from roa import fields
 
 
-BASKET = json.dumps({
+BASKET = {
         "is_rotten": True,
         "name": "Lovely Basket"
-        })
+        }
 
 
 class FruitBasket(documents.Document):
@@ -28,7 +28,6 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         self.basket = FruitBasket()
 
     def it_has_a_to_json_method(self):
-        #print dir(self)
         eq_(True, hasattr(self.basket, 'to_json'))
 
     def it_has_a_save_method(self):
@@ -46,8 +45,9 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_(True, hasattr(self.basket, 'name'))
         eq_(types.NoneType, type(self.basket.name))
 
+        # If a default value is specified, the field is set to that one
         eq_(True, hasattr(self.basket, 'is_rotten'))
-        eq_(types.NoneType, type(self.basket.is_rotten))
+        eq_(types.BooleanType, type(self.basket.is_rotten))
 
 
 class when_a_representation_is_parsed(unittest.TestCase):
@@ -69,3 +69,13 @@ class when_a_document_inherits_from_another_document(unittest.TestCase):
         eq_(True, 'is_present' in self.basket.fields)
         eq_(True, 'is_rotten' in self.basket.fields)
         eq_(True, 'name' in self.basket.fields)
+
+
+class when_a_document_is_bound(unittest.TestCase):
+    def setUp(self):
+        self.basket = FruitBasket()
+
+    def it_can_render_to_json(self):
+        self.basket.name = 'Lovely Basket'
+        self.basket.is_rotten = True
+        eq_(json.dumps(BASKET), self.basket.to_json())
