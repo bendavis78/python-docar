@@ -13,14 +13,28 @@ BASKET = {
         "name": "Lovely Basket"
         }
 
+FRUIT_CHOICES = (
+        (0, 'sweet'),
+        (1, 'sour')
+        )
+
+
+class LemonFruit(documents.Document):
+    #taste = fields.ChoiceField(choices=FRUIT_CHOICES)
+    count = fields.IntegerField(default=1)
+
 
 class FruitBasket(documents.Document):
     is_rotten = fields.BooleanField(default=False)
     name = fields.StringField()
 
+    class Meta:
+        model = 'haha'
+
 
 class SpecialFruitBasket(FruitBasket):
     is_present = fields.BooleanField()
+    #lemons = fields.CollectionField(LemonFruit)
 
 
 class when_a_document_gets_instantiated(unittest.TestCase):
@@ -48,6 +62,9 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         # If a default value is specified, the field is set to that one
         eq_(True, hasattr(self.basket, 'is_rotten'))
         eq_(types.BooleanType, type(self.basket.is_rotten))
+
+    def it_has_a_meta_attribute_to_store_options(self):
+        eq_(True, hasattr(self.basket, '_meta'))
 
 
 class when_a_representation_is_parsed(unittest.TestCase):

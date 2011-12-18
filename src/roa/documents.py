@@ -5,10 +5,31 @@ import copy
 from roa.fields import Field, NOT_PROVIDED
 
 
+class Options(object):
+    def __init__(self, model=None):
+        self.model = model
+
+
 class DocumentBase(type):
     """Metaclass for the Document class."""
 
     def __new__(cls, name, bases, attrs):
+        new_class = super(DocumentBase, cls).__new__(cls, name, bases, attrs)
+
+        # set the defaults
+        setattr(new_class, '_meta', Options())
+
+        attr_meta = attrs.pop('Meta', None)
+
+        #print attr_meta
+        if attr_meta:
+            meta_attrs = attr_meta.__dict__.copy()
+            for name, value in attr_meta.__dict__.items():
+                if name.startswith('_'):
+                    del meta_attrs[name]
+                    continue
+                setattr(new_class._meta, name, meta_attrs.pop(name))
+
         # populate the fields list
         fields = [
                 (field_name, attrs.pop(field_name))
@@ -21,11 +42,11 @@ class DocumentBase(type):
             if hasattr(base, 'base_fields'):
                 fields = base.base_fields.items() + fields
 
-        attrs['base_fields'] = dict(fields)
-        new_class = super(DocumentBase, cls).__new__(cls, name, bases, attrs)
+        #attrs['base_fields'] = dict(fields)
+        setattr(new_class, 'base_fields', dict(fields))
 
         # create the fields on the instance document
-        for field_name, val in attrs['base_fields'].items():
+        for field_name, val in new_class.base_fields.items():
             if val.default == NOT_PROVIDED:
                 setattr(new_class, field_name, None)
             else:
@@ -35,7 +56,7 @@ class DocumentBase(type):
 
 
 class Document(object):
-    """A document is a represantation."""
+    """A document is a representation."""
     __metaclass__ = DocumentBase
 
     def __init__(self, data=None):
@@ -47,10 +68,9 @@ class Document(object):
         """
         self.fields = copy.deepcopy(self.base_fields)
 
-        if not data:
-            return
-
-        if type(data) is not types.DictType:
+        # Check on the input
+        if (not data or
+                type(data) is not types.DictType):
             return
 
         # set the preloaded attributes

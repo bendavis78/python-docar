@@ -15,3 +15,8 @@ class BooleanField(Field):
 class StringField(Field):
     def __init__(self, *args, **kwargs):
         super(StringField, self).__init__(*args, **kwargs)
+
+
+class IntegerField(Field):
+    def __init__(self, *args, **kwargs):
+        super(IntegerField, self).__init__(*args, **kwargs)
