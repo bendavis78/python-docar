@@ -21,7 +21,7 @@ FRUIT_CHOICES = (
 
 class LemonFruit(documents.Document):
     #taste = fields.ChoiceField(choices=FRUIT_CHOICES)
-    count = fields.IntegerField(default=1)
+    count = fields.NumberField(default=1)
 
 
 class FruitBasket(documents.Document):

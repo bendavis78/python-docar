@@ -23,7 +23,23 @@ class when_a_string_field_gets_instantiated(unittest.TestCase):
 
 class when_an_integer_field_gets_instantiated(unittest.TestCase):
     def setUp(self):
-        self.integer_field = fields.IntegerField(default=1)
+        self.integer_field = fields.NumberField(default=1)
 
     def it_has_a_default_value(self):
         eq_(1, self.integer_field.default)
+
+
+class when_an_object_field_gets_instantiated(unittest.TestCase):
+    def setUp(self):
+        self.object_field = fields.ObjectField()
+
+    def it_is_an_empty_dict(self):
+        eq_({}, self.object_field.default)
+
+
+class when_a_collection_field_gets_instantiated(unittest.TestCase):
+    def setUp(self):
+        self.collection_field = fields.CollectionField()
+
+    def it_is_an_empty_list(self):
+        eq_([], self.collection_field.default)
