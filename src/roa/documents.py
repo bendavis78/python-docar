@@ -10,6 +10,18 @@ from roa.fields import Field, NOT_PROVIDED
 DEFAULT_NAMES = ('identifier', 'model', 'excludes')
 
 
+def clean_meta(Meta):
+    """Clean the Meta class from internal attributes."""
+    if not Meta:
+        return
+    CleanedMeta = Meta.__dict__.copy()
+    for name in Meta.__dict__:
+        if name.startswith('_'):
+            del CleanedMeta[name]
+
+    return CleanedMeta
+
+
 class Options(object):
     """A option class used to initiate documents in a sane state."""
     def __init__(self, meta):
@@ -22,6 +34,10 @@ class Options(object):
 
         self.meta = meta
 
+    def update(self, options={}):
+        for option, value in options.items():
+            setattr(self, option, value)
+
     def add_field(self, field):
         """Insert field into this documents fields."""
         self.local_fields.insert(bisect(self.local_fields, field), field)
@@ -33,13 +49,7 @@ class Options(object):
 
         # Then override it with values from the ``Meta`` class
         if self.meta:
-            meta_attrs = self.meta.__dict__.copy()
-            for name in self.meta.__dict__:
-                # Ignore any private attributes that we don't care about.
-                # NOTE: We can't modify a dictionary's contents while looping
-                # over it, so we loop over the *original* dictionary instead.
-                if name.startswith('_'):
-                    del meta_attrs[name]
+            meta_attrs = self.meta
             for attr_name in DEFAULT_NAMES:
                 if attr_name in meta_attrs:
                     setattr(self, attr_name, meta_attrs.pop(attr_name))
@@ -55,10 +65,10 @@ class DocumentBase(type):
         parents = [b for b in bases if isinstance(b, DocumentBase)]
 
         attr_meta = attrs.pop('Meta', None)
-        base_meta = getattr(new_class, '_meta', None)
+        meta_attrs = clean_meta(attr_meta)
 
         # set the defaults
-        new_class.add_to_class('_meta', Options(attr_meta))
+        new_class.add_to_class('_meta', Options(meta_attrs))
 
         # set all attributes to the class
         for name, obj in attrs.items():

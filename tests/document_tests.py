@@ -7,6 +7,7 @@ from mock import Mock
 
 from roa import documents
 from roa import fields
+from roa import Document
 
 
 BASKET = {
@@ -98,6 +99,24 @@ class when_a_representation_is_parsed(unittest.TestCase):
 class when_a_document_inherits_from_another_document(unittest.TestCase):
     def setUp(self):
         self.basket = SpecialFruitBasket()
+
+    def it_doesnt_overrides_meta_options_of_the_parent(self):
+        class BaseDocument(Document):
+            class Meta:
+                identifier = 'name'
+                excludes = ['id']
+
+        doc = BaseDocument()
+        eq_(['id'], doc._meta.excludes)
+        eq_('name', doc._meta.identifier)
+
+        class ChildDocument(BaseDocument):
+            class Meta(BaseDocument.Meta):
+                excludes = ['id', 'key']
+
+        doc = ChildDocument()
+        eq_(['id', 'key'], doc._meta.excludes)
+        eq_('id', doc._meta.identifier)
 
     def it_inherits_all_fields(self):
         # that should be the total amount of fields for the inherited document
