@@ -85,17 +85,21 @@ class Document(object):
                 setattr(self, field_name, val)
 
     def to_json(self):
+        """Render this document as json."""
+        return json.dumps(self.to_attributes())
+
+    def to_attributes(self):
+        """Render this document to a python dictionary."""
         data = {}
 
         for field_name in self.fields.keys():
             data[field_name] = getattr(self, field_name)
 
-        return json.dumps(data)
+        return data
 
     def save(self):
-        if not self._meta.model:
-            #FIXME: Better raise an exception here
-            raise Exception
+        """Save the document in a django model backend."""
+        #FIXME: Handle the fact if the document is not mapped to a model
         # First see if the model already exists
         try:
             obj = self._meta.model.objects.get(id=self.id)

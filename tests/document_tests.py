@@ -104,6 +104,11 @@ class when_a_document_is_bound(unittest.TestCase):
         self.basket.is_rotten = True
         eq_(json.dumps(BASKET), self.basket.to_json())
 
+    def it_can_be_rendered_to_a_python_dictionary(self):
+        self.basket.name = 'Lovely Basket'
+        self.basket.is_rotten = True
+        eq_(BASKET, self.basket.to_attributes())
+
     def it_can_be_saved_to_a_django_model(self):
         # Mock the actual django model
         DjangoModel = Mock(name='DjangoModel')
