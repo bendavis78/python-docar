@@ -6,6 +6,7 @@ from roa.fields import Field, NOT_PROVIDED
 
 
 class Options(object):
+    """A option class used to initiate documents in a sane state."""
     def __init__(self, model=None, excludes=[], identifier='id'):
         self.model = model
         self.identifier = identifier
@@ -110,4 +111,13 @@ class Document(object):
         obj.save()
 
     def validate(self):
+        pass
+
+    def uri(self):
+        """Return the absolute uri for this resource."""
+        return self._compute_uri()
+
+    def _compute_uri(self):
+        """The mechanism to compute the uri of this resource."""
+        #FIXME: Implement the django get_absolute_uri handler
         pass

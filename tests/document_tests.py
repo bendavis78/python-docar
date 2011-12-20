@@ -98,16 +98,20 @@ class when_a_document_inherits_from_another_document(unittest.TestCase):
 class when_a_document_is_bound(unittest.TestCase):
     def setUp(self):
         self.basket = FruitBasket()
-
-    def it_can_render_to_json(self):
         self.basket.name = 'Lovely Basket'
         self.basket.is_rotten = True
+
+    def it_can_render_to_json(self):
         eq_(json.dumps(BASKET), self.basket.to_json())
 
     def it_can_be_rendered_to_a_python_dictionary(self):
-        self.basket.name = 'Lovely Basket'
-        self.basket.is_rotten = True
         eq_(BASKET, self.basket.to_attributes())
+
+    def it_can_collect_links(self):
+        self.basket._compute_uri = Mock()
+        self.basket._compute_uri.return_value = 'http://localhost/basket/1/'
+
+        eq_('http://localhost/basket/1/', self.basket.uri())
 
     def it_can_be_saved_to_a_django_model(self):
         # Mock the actual django model
