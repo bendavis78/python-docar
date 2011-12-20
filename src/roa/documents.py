@@ -6,8 +6,9 @@ from roa.fields import Field, NOT_PROVIDED
 
 
 class Options(object):
-    def __init__(self, model=None, excludes=[]):
+    def __init__(self, model=None, excludes=[], identifier='id'):
         self.model = model
+        self.identifier = identifier
         # FIXME: Do some type checking
         self.excludes = excludes
 
@@ -92,7 +93,17 @@ class Document(object):
         return json.dumps(data)
 
     def save(self):
-        pass
+        if not self._meta.model:
+            #FIXME: Better raise an exception here
+            raise Exception
+        # First see if the model already exists
+        try:
+            obj = self._meta.model.objects.get(id=self.id)
+        except self._meta.model.DoesNotExist:
+            # We assume it gets newly created
+            obj = self._meta.model()
+
+        obj.save()
 
     def validate(self):
         pass

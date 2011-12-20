@@ -3,6 +3,7 @@ import types
 import json
 
 from nose.tools import eq_
+from mock import Mock
 
 from roa import documents
 from roa import fields
@@ -69,6 +70,8 @@ class when_a_document_gets_instantiated(unittest.TestCase):
     def it_has_many_options_initialized_with_default_values(self):
         eq_(True, hasattr(self.basket._meta, 'excludes'))
         eq_([], self.basket._meta.excludes)
+        eq_(True, hasattr(self.basket._meta, 'identifier'))
+        eq_('id', self.basket._meta.identifier)
 
 
 class when_a_representation_is_parsed(unittest.TestCase):
@@ -100,3 +103,43 @@ class when_a_document_is_bound(unittest.TestCase):
         self.basket.name = 'Lovely Basket'
         self.basket.is_rotten = True
         eq_(json.dumps(BASKET), self.basket.to_json())
+
+    def it_can_be_saved_to_a_django_model(self):
+        # Mock the actual django model
+        DjangoModel = Mock(name='DjangoModel')
+
+        class ModelDocument(documents.Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+
+            class Meta:
+                # Use the mocked django model
+                model = DjangoModel
+
+        # create the mocked instance of the model
+        mock_model = DjangoModel.return_value
+
+        # mock the manager object, It should throw an exception
+        DjangoModel.DoesNotExist = Exception
+        DjangoModel.objects.get.side_effect = DjangoModel.DoesNotExist
+
+        # The expectation is that this instance gets newly created
+        instance = ModelDocument({'id': 23, 'name': 'hello world'})
+        instance.save()
+
+        eq_(True, DjangoModel.objects.get.called)
+        eq_(True, DjangoModel.called)
+        eq_(True, mock_model.save.called)
+
+        # Now don't create a new model, but update an existing one
+        # mock the manager object, It should throw an exception
+        DjangoModel.DoesNotExist = Exception
+        DjangoModel.objects.get.return_value = mock_model
+
+        # The expectation is that this instance gets newly created
+        instance = ModelDocument({'id': 23, 'name': 'hello world'})
+        instance.save()
+
+        eq_(True, DjangoModel.objects.get.called)
+        eq_(True, DjangoModel.called)
+        eq_(True, mock_model.save.called)

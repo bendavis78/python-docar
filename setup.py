@@ -9,7 +9,7 @@ def read(fname):
 
 extra = {}
 requirements = ['distribute', 'docutils'],
-tests_require = ['nose', 'coverage']
+tests_require = ['nose', 'coverage', 'mock']
 
 if sys.version_info <= (2, 6):
     requirements.append('simplejson')
