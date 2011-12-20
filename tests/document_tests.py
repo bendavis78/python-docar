@@ -8,6 +8,9 @@ from mock import Mock
 from roa import documents
 from roa import fields
 from roa import Document
+from roa.exceptions import ModelDoesNotExist
+
+from app import Article, ArticleModel
 
 
 BASKET = {
@@ -85,6 +88,30 @@ class when_a_document_gets_instantiated(unittest.TestCase):
     def it_saves_the_field_attribute_name_inside_the_field(self):
         eq_('is_rotten', self.basket._meta.local_fields[0].name)
         eq_('name', self.basket._meta.local_fields[1].name)
+
+    def it_can_fetch_its_state_from_the_model_backend(self):
+        doc1 = Article({'id': 1})
+
+        # before we actually fetch the document, name should be empty
+        eq_(None, doc1.name)
+
+        # we mock the model object
+        mock_model = ArticleModel.return_value
+
+        ArticleModel.objects.get.return_value = mock_model
+        mock_model.id = 1
+        mock_model.name = "hello"
+
+        # this should all work out now
+        doc1.fetch()
+        eq_("hello", doc1.name)
+
+        # mock the manager object, It should throw an exception
+        ArticleModel.objects.get.side_effect = ArticleModel.DoesNotExist
+
+        with self.assertRaises(ModelDoesNotExist):
+            doc1.fetch()
+        #assert_raises(ModelDoesNotExist, doc1.fetch)
 
 
 class when_a_representation_is_parsed(unittest.TestCase):

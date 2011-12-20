@@ -5,6 +5,7 @@ import copy
 from bisect import bisect
 
 from roa.fields import Field, NOT_PROVIDED
+from roa.exceptions import ModelDoesNotExist
 
 
 DEFAULT_NAMES = ('identifier', 'model', 'excludes')
@@ -168,6 +169,16 @@ class Document(object):
         for field in self._meta.local_fields:
             setattr(obj, field.name, getattr(self, field.name))
         obj.save()
+
+    def fetch(self):
+        try:
+            obj = self._meta.model.objects.get(id=self.id)
+        except self._meta.model.DoesNotExist:
+            raise ModelDoesNotExist
+
+        for field in self._meta.local_fields:
+            if hasattr(obj, field.name):
+                setattr(self, field.name, getattr(obj, field.name))
 
     def validate(self):
         pass
