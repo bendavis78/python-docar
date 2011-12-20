@@ -2,21 +2,8 @@ import unittest
 
 from nose.tools import eq_
 
-from roa import Collection
-from roa import Document
-from roa import fields
-
-
-class Article(Document):
-    id = fields.NumberField()
-    name = fields.StringField()
-
-    class Meta:
-        model = 'Article'
-
-
-class NewsPaper(Collection):
-    document = Article
+# import the sample app
+from app import Article, NewsPaper
 
 
 class when_a_collection_gets_instantiated(unittest.TestCase):
