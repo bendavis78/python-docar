@@ -3,8 +3,26 @@ class NOT_PROVIDED:
 
 
 class Field(object):
+    # This counter is used to keep track of the order of declaration of fields.
+    creation_counter = 0
+
     def __init__(self, default=NOT_PROVIDED):
         self.default = default
+
+        # Set the creation counter. Increment it for each field declaration
+        self.creation_counter = Field.creation_counter
+        Field.creation_counter += 1
+
+    def __cmp__(self, other):
+        # Needed for bisect, make sure the order of fields is preserved
+        return cmp(self.creation_counter, other.creation_counter)
+
+    def contribute_to_class(self, cls, name):
+        """Contribute ``self`` to ``cls``. Used to set several field specific
+        attributes. Called during class creation in ``DocumentBase``."""
+        self.name = name
+        self.document = cls
+        cls._meta.add_field(self)
 
 
 ## Primitive Datatype

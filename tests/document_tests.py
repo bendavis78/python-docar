@@ -73,6 +73,18 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_(True, hasattr(self.basket._meta, 'identifier'))
         eq_('id', self.basket._meta.identifier)
 
+    def it_stores_the_declared_fields_in_the_right_order(self):
+        special = SpecialFruitBasket()
+
+        # expect the fields to be stored in this order
+        eq_('is_rotten', special._meta.local_fields[0].name)
+        eq_('name', special._meta.local_fields[1].name)
+        eq_('is_present', special._meta.local_fields[2].name)
+
+    def it_saves_the_field_attribute_name_inside_the_field(self):
+        eq_('is_rotten', self.basket._meta.local_fields[0].name)
+        eq_('name', self.basket._meta.local_fields[1].name)
+
 
 class when_a_representation_is_parsed(unittest.TestCase):
     def setUp(self):

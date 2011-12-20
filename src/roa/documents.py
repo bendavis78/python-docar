@@ -2,16 +2,49 @@ import json
 import types
 import copy
 
+from bisect import bisect
+
 from roa.fields import Field, NOT_PROVIDED
+
+
+DEFAULT_NAMES = ('identifier', 'model', 'excludes')
 
 
 class Options(object):
     """A option class used to initiate documents in a sane state."""
-    def __init__(self, model=None, excludes=[], identifier='id'):
-        self.model = model
-        self.identifier = identifier
+    def __init__(self, meta):
+        # Initialize some default values
+        self.model = None
+        self.identifier = 'id'
         # FIXME: Do some type checking
-        self.excludes = excludes
+        self.excludes = []
+        self.local_fields = []
+
+        self.meta = meta
+
+    def add_field(self, field):
+        """Insert field into this documents fields."""
+        self.local_fields.insert(bisect(self.local_fields, field), field)
+
+    def contribute_to_class(self, cls, name):
+        # This is bluntly stolen from django
+        # Set first thedefault values
+        cls._meta = self
+
+        # Then override it with values from the ``Meta`` class
+        if self.meta:
+            meta_attrs = self.meta.__dict__.copy()
+            for name in self.meta.__dict__:
+                # Ignore any private attributes that we don't care about.
+                # NOTE: We can't modify a dictionary's contents while looping
+                # over it, so we loop over the *original* dictionary instead.
+                if name.startswith('_'):
+                    del meta_attrs[name]
+            for attr_name in DEFAULT_NAMES:
+                if attr_name in meta_attrs:
+                    setattr(self, attr_name, meta_attrs.pop(attr_name))
+                elif hasattr(self.meta, attr_name):
+                    setattr(self, attr_name, getattr(self.meta, attr_name))
 
 
 class DocumentBase(type):
@@ -19,20 +52,23 @@ class DocumentBase(type):
 
     def __new__(cls, name, bases, attrs):
         new_class = super(DocumentBase, cls).__new__(cls, name, bases, attrs)
-
-        # set the defaults
-        setattr(new_class, '_meta', Options())
+        parents = [b for b in bases if isinstance(b, DocumentBase)]
 
         attr_meta = attrs.pop('Meta', None)
+        base_meta = getattr(new_class, '_meta', None)
 
-        #print attr_meta
-        if attr_meta:
-            meta_attrs = attr_meta.__dict__.copy()
-            for name, value in attr_meta.__dict__.items():
-                if name.startswith('_'):
-                    del meta_attrs[name]
-                    continue
-                setattr(new_class._meta, name, meta_attrs.pop(name))
+        # set the defaults
+        new_class.add_to_class('_meta', Options(attr_meta))
+
+        # set all attributes to the class
+        for name, obj in attrs.items():
+            new_class.add_to_class(name, obj)
+
+        for base in parents:
+            if not hasattr(base, '_meta'):
+                continue
+            for field in base._meta.local_fields:
+                new_class.add_to_class(field.name, field)
 
         # populate the fields list
         fields = [
@@ -57,6 +93,14 @@ class DocumentBase(type):
                 setattr(new_class, field_name, val.default)
 
         return new_class
+
+    def add_to_class(cls, name, obj):
+        """If the obj provides its own contribute method, call it, otherwise
+        attach this object to the class."""
+        if hasattr(obj, 'contribute_to_class'):
+            obj.contribute_to_class(cls, name)
+        else:
+            setattr(cls, name, obj)
 
 
 class Document(object):
@@ -114,7 +158,19 @@ class Document(object):
         pass
 
     def uri(self):
-        """Return the absolute uri for this resource."""
+        """Return the absolute uri for this resource.
+
+        :return: The URI of this resource.
+        :rtype: string
+
+        Implement this method on your document if you have special needs for
+        the form of the URI.
+
+        .. note::
+
+            This method should always return the absolute URI as a string.
+
+        """
         return self._compute_uri()
 
     def _compute_uri(self):
