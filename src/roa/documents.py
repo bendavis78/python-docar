@@ -75,6 +75,7 @@ class DocumentBase(type):
             for field in base._meta.local_fields:
                 new_class.add_to_class(field.name, field)
 
+        #FIXME: Not sure if I need fields and base_fields
         # populate the fields list
         fields = [
                 (field_name, attrs.pop(field_name))
@@ -119,6 +120,7 @@ class Document(object):
         :type data: dict
 
         """
+        #FIXME: Do I actualy need this attribute?
         self.fields = copy.deepcopy(self.base_fields)
 
         # Check on the input
@@ -173,9 +175,6 @@ class Document(object):
         for field in self._meta.local_fields:
             if hasattr(obj, field.name):
                 setattr(self, field.name, getattr(obj, field.name))
-
-    def validate(self):
-        pass
 
     def uri(self):
         """Return the absolute uri for this resource.

@@ -2,7 +2,7 @@ import unittest
 import types
 import json
 
-from nose.tools import eq_
+from nose.tools import eq_, assert_raises
 from mock import Mock
 
 from roa import documents
@@ -52,8 +52,8 @@ class when_a_document_gets_instantiated(unittest.TestCase):
     def it_has_a_save_method(self):
         eq_(True, hasattr(self.basket, 'save'))
 
-    def it_has_a_validate_method(self):
-        eq_(True, hasattr(self.basket, 'validate'))
+    def it_has_a_fetch_method(self):
+        eq_(True, hasattr(self.basket, 'fetch'))
 
     def it_has_a_dict_of_fields(self):
         eq_(types.DictType, type(self.basket.fields))
@@ -109,9 +109,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         # mock the manager object, It should throw an exception
         ArticleModel.objects.get.side_effect = ArticleModel.DoesNotExist
 
-        with self.assertRaises(ModelDoesNotExist):
-            doc1.fetch()
-        #assert_raises(ModelDoesNotExist, doc1.fetch)
+        assert_raises(ModelDoesNotExist, doc1.fetch)
 
 
 class when_a_representation_is_parsed(unittest.TestCase):
