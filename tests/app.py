@@ -5,12 +5,42 @@ from roa import Document
 from roa import fields
 
 
+EditorModel = Mock(name='EditorModel')
+EditorModel.DoesNotExist = Exception
+
 ArticleModel = Mock(name='ArticleModel')
 ArticleModel.DoesNotExist = Exception
+
+TagModel = Mock(name='TagModel')
+TagModel.DoesNotExist = Exception
+
+
+class Editor(Document):
+    first_name = fields.StringField()
+    last_name = fields.StringField()
+
+    class Meta:
+        model = EditorModel
+
+
+class Tag(Document):
+    slug = fields.StringField()
+
+    class Meta:
+        model = TagModel
+        identifier = 'slug'
+
+
+class TagCloud(Collection):
+    document = Tag
+
 
 class Article(Document):
     id = fields.NumberField()
     name = fields.StringField()
+    #tags = fields.CollectionField(TagCloud)
+    #editor = fields.ObjectField(Editor)
+    #published = fields.ChoiceField(choices=PUBLISH_CHOICES)
 
     class Meta:
         model = ArticleModel
