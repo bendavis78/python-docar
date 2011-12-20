@@ -35,10 +35,6 @@ class Options(object):
 
         self.meta = meta
 
-    def update(self, options={}):
-        for option, value in options.items():
-            setattr(self, option, value)
-
     def add_field(self, field):
         """Insert field into this documents fields."""
         self.local_fields.insert(bisect(self.local_fields, field), field)
@@ -76,8 +72,6 @@ class DocumentBase(type):
             new_class.add_to_class(name, obj)
 
         for base in parents:
-            if not hasattr(base, '_meta'):
-                continue
             for field in base._meta.local_fields:
                 new_class.add_to_class(field.name, field)
 
