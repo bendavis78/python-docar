@@ -6,8 +6,10 @@ from roa.fields import Field, NOT_PROVIDED
 
 
 class Options(object):
-    def __init__(self, model=None):
+    def __init__(self, model=None, excludes=[]):
         self.model = model
+        # FIXME: Do some type checking
+        self.excludes = excludes
 
 
 class DocumentBase(type):

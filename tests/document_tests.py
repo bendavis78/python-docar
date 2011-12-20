@@ -66,6 +66,10 @@ class when_a_document_gets_instantiated(unittest.TestCase):
     def it_has_a_meta_attribute_to_store_options(self):
         eq_(True, hasattr(self.basket, '_meta'))
 
+    def it_has_many_options_initialized_with_default_values(self):
+        eq_(True, hasattr(self.basket._meta, 'excludes'))
+        eq_([], self.basket._meta.excludes)
+
 
 class when_a_representation_is_parsed(unittest.TestCase):
     def setUp(self):
