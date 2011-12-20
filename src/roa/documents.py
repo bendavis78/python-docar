@@ -176,6 +176,13 @@ class Document(object):
             if hasattr(obj, field.name):
                 setattr(self, field.name, getattr(obj, field.name))
 
+    def delete(self):
+        """Delete a model instance associated with this document."""
+        obj = self._meta.model.objects.get(id=self.id)
+
+        # delete the model
+        obj.delete()
+
     def uri(self):
         """Return the absolute uri for this resource.
 

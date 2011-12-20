@@ -55,6 +55,9 @@ class when_a_document_gets_instantiated(unittest.TestCase):
     def it_has_a_fetch_method(self):
         eq_(True, hasattr(self.basket, 'fetch'))
 
+    def it_has_a_delete_method(self):
+        eq_(True, hasattr(self.basket, 'delete'))
+
     def it_has_a_dict_of_fields(self):
         eq_(types.DictType, type(self.basket.fields))
         eq_(True, 'is_rotten' in self.basket.fields)
@@ -110,6 +113,17 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         ArticleModel.objects.get.side_effect = ArticleModel.DoesNotExist
 
         assert_raises(ModelDoesNotExist, doc1.fetch)
+
+    def it_can_delete_its_model_backend(self):
+        doc1 = Article({'id': 1})
+
+        # we mock the model object
+        mock_model = ArticleModel.return_value
+        ArticleModel.objects.get.return_value = mock_model
+
+        # delete the model
+        doc1.delete()
+        eq_([('delete',)], mock_model.method_calls)
 
 
 class when_a_representation_is_parsed(unittest.TestCase):
