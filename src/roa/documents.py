@@ -134,9 +134,11 @@ class Document(object):
         # set the preloaded attributes
         for field_name, val in data.items():
             # We set simple fields, defer references and collections
+            # FIXME: Shouldn't the validator do that???
             if type(val) == types.UnicodeType or \
                     type(val) == types.StringType or \
-                    type(val) == types.BooleanType:
+                    type(val) == types.BooleanType or \
+                    type(val) == types.IntType:
                 setattr(self, field_name, val)
 
     def to_json(self):
@@ -162,6 +164,9 @@ class Document(object):
             # We assume it gets newly created
             obj = self._meta.model()
 
+        # populate the obj with the documents state
+        for field in self._meta.local_fields:
+            setattr(obj, field.name, getattr(self, field.name))
         obj.save()
 
     def validate(self):

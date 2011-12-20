@@ -170,6 +170,9 @@ class when_a_document_is_bound(unittest.TestCase):
         eq_(True, DjangoModel.objects.get.called)
         eq_(True, DjangoModel.called)
         eq_(True, mock_model.save.called)
+        # The attributes of the model should be set
+        eq_(23, mock_model.id)
+        eq_('hello world', mock_model.name)
 
         # Now don't create a new model, but update an existing one
         # mock the manager object, It should throw an exception
@@ -177,9 +180,12 @@ class when_a_document_is_bound(unittest.TestCase):
         DjangoModel.objects.get.return_value = mock_model
 
         # The expectation is that this instance gets newly created
-        instance = ModelDocument({'id': 23, 'name': 'hello world'})
+        instance = ModelDocument({'id': 24, 'name': 'hello universe'})
         instance.save()
 
         eq_(True, DjangoModel.objects.get.called)
         eq_(True, DjangoModel.called)
         eq_(True, mock_model.save.called)
+        # The attributes of the model should be set
+        eq_(24, mock_model.id)
+        eq_('hello universe', mock_model.name)
