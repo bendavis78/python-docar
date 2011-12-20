@@ -1,9 +1,9 @@
-.. django-documents documentation master file, created by
+.. django-roar documentation master file, created by
    sphinx-quickstart on Sat Dec 17 18:44:13 2011.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to django-documents's documentation!
+Welcome to django-roar's documentation!
 ============================================
 
 Contents:
