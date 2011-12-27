@@ -32,12 +32,17 @@ class Options(object):
         # FIXME: Do some type checking
         self.excludes = []
         self.local_fields = []
+        self.related_fields = []
 
         self.meta = meta
 
     def add_field(self, field):
         """Insert field into this documents fields."""
         self.local_fields.insert(bisect(self.local_fields, field), field)
+
+    def add_related_field(self, field):
+        """Insert a related field into the documents fields."""
+        self.related_fields.insert(bisect(self.local_fields, field), field)
 
     def contribute_to_class(self, cls, name):
         # This is bluntly stolen from django
@@ -97,6 +102,10 @@ class DocumentBase(type):
                 setattr(new_class, field_name, None)
             else:
                 setattr(new_class, field_name, val.default)
+
+        # create the related fields on the instance document
+        for field in new_class._meta.related_fields:
+            setattr(new_class, "%s_id" % field.name, None)
 
         return new_class
 

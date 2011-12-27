@@ -11,6 +11,7 @@ from roa import Document
 from roa.exceptions import ModelDoesNotExist
 
 from app import Article, ArticleModel
+from app import Editor, EditorModel
 
 
 BASKET = {
@@ -58,10 +59,10 @@ class when_a_document_gets_instantiated(unittest.TestCase):
     def it_has_a_delete_method(self):
         eq_(True, hasattr(self.basket, 'delete'))
 
-    def it_has_a_dict_of_fields(self):
-        eq_(types.DictType, type(self.basket.fields))
-        eq_(True, 'is_rotten' in self.basket.fields)
-        eq_(True, 'name' in self.basket.fields)
+    def it_has_a_list_of_fields_in_meta(self):
+        eq_(types.ListType, type(self.basket._meta.local_fields))
+        eq_(fields.BooleanField, type(self.basket._meta.local_fields[0]))
+        eq_(fields.StringField, type(self.basket._meta.local_fields[1]))
 
     def it_has_an_attribute_for_each_field(self):
         eq_(True, hasattr(self.basket, 'name'))
@@ -124,6 +125,10 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         # delete the model
         doc1.delete()
         eq_([('delete',)], mock_model.method_calls)
+
+    def it_can_link_to_other_documents(self):
+        editor = Editor({'first_name': 'Christo', 'last_name': 'Buschek'})
+        doc1 = Article({'id': 1, 'editor': editor})
 
 
 class when_a_representation_is_parsed(unittest.TestCase):
