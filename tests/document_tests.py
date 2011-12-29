@@ -11,7 +11,7 @@ from roa import Document
 from roa.exceptions import ModelDoesNotExist
 
 from app import Article, ArticleModel
-from app import Editor, EditorModel
+#from app import Editor, EditorModel
 
 
 BASKET = {
@@ -46,40 +46,41 @@ class SpecialFruitBasket(FruitBasket):
 class when_a_document_gets_instantiated(unittest.TestCase):
     def setUp(self):
         self.basket = FruitBasket()
+        self.article = Article()
 
     def it_has_a_to_json_method(self):
-        eq_(True, hasattr(self.basket, 'to_json'))
+        eq_(True, hasattr(self.article, 'to_json'))
 
     def it_has_a_save_method(self):
-        eq_(True, hasattr(self.basket, 'save'))
+        eq_(True, hasattr(self.article, 'save'))
 
     def it_has_a_fetch_method(self):
-        eq_(True, hasattr(self.basket, 'fetch'))
+        eq_(True, hasattr(self.article, 'fetch'))
 
     def it_has_a_delete_method(self):
-        eq_(True, hasattr(self.basket, 'delete'))
+        eq_(True, hasattr(self.article, 'delete'))
 
     def it_has_a_list_of_fields_in_meta(self):
-        eq_(types.ListType, type(self.basket._meta.local_fields))
-        eq_(fields.BooleanField, type(self.basket._meta.local_fields[0]))
-        eq_(fields.StringField, type(self.basket._meta.local_fields[1]))
+        eq_(types.ListType, type(self.article._meta.local_fields))
+        eq_(fields.NumberField, type(self.article._meta.local_fields[0]))
+        eq_(fields.StringField, type(self.article._meta.local_fields[1]))
 
     def it_has_an_attribute_for_each_field(self):
-        eq_(True, hasattr(self.basket, 'name'))
-        eq_(types.NoneType, type(self.basket.name))
+        eq_(True, hasattr(self.article, 'name'))
+        eq_(types.NoneType, type(self.article.name))
 
         # If a default value is specified, the field is set to that one
-        eq_(True, hasattr(self.basket, 'is_rotten'))
-        eq_(types.BooleanType, type(self.basket.is_rotten))
+        eq_(True, hasattr(self.article, 'id'))
+        eq_(types.NoneType, type(self.article.id))
 
     def it_has_a_meta_attribute_to_store_options(self):
-        eq_(True, hasattr(self.basket, '_meta'))
+        eq_(True, hasattr(self.article, '_meta'))
 
     def it_has_many_options_initialized_with_default_values(self):
-        eq_(True, hasattr(self.basket._meta, 'excludes'))
-        eq_([], self.basket._meta.excludes)
-        eq_(True, hasattr(self.basket._meta, 'identifier'))
-        eq_('id', self.basket._meta.identifier)
+        eq_(True, hasattr(self.article._meta, 'excludes'))
+        eq_([], self.article._meta.excludes)
+        eq_(True, hasattr(self.article._meta, 'identifier'))
+        eq_('id', self.article._meta.identifier)
 
     def it_stores_the_declared_fields_in_the_right_order(self):
         special = SpecialFruitBasket()
@@ -127,8 +128,9 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_([('delete',)], mock_model.method_calls)
 
     def it_can_link_to_other_documents(self):
-        editor = Editor({'first_name': 'Christo', 'last_name': 'Buschek'})
-        doc1 = Article({'id': 1, 'editor': editor})
+        #editor = Editor({'first_name': 'Christo', 'last_name': 'Buschek'})
+        #doc1 = Article({'id': 1, 'editor': editor})
+        pass
 
 
 class when_a_representation_is_parsed(unittest.TestCase):
