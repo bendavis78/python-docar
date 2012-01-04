@@ -15,12 +15,12 @@ if sys.version_info <= (2, 6):
     requirements.append('simplejson')
 
 setup(
-    name="roa",
+    name="docar",
     version="0.1",
     packages=find_packages('src'),
     package_dir={'': 'src'},
     #include_package_data=True,
-    zip_safe=False,  # Don't create egg files, Django cannot find templates
+    #zip_safe=False,  # Don't create egg files, Django cannot find templates
                      # in egg files.
     install_requires=requirements,
 
@@ -31,7 +31,7 @@ setup(
 
     author="Christo Buschek",
     author_email="crito@30loops.net",
-    url="https://github.com/30loops/django-documents",
+    url="https://github.com/30loops/python-docar",
     description="Create resource oriented architectures for RESTful client \
 and server applications.",
     long_description=read('README.rst'),
