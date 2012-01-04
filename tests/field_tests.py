@@ -2,7 +2,7 @@ import unittest
 
 from nose.tools import eq_
 
-from roa import fields, Document
+from docar import fields, Document
 
 
 class when_a_boolean_field_gets_instantiated(unittest.TestCase):

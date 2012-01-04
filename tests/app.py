@@ -1,8 +1,8 @@
 from mock import Mock
 
-from roa import Collection
-from roa import Document
-from roa import fields
+from docar import Collection
+from docar import Document
+from docar import fields
 
 
 EditorModel = Mock(name='EditorModel')

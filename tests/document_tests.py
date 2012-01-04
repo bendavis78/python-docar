@@ -5,10 +5,10 @@ import json
 from nose.tools import eq_, assert_raises
 from mock import Mock
 
-from roa import documents
-from roa import fields
-from roa import Document
-from roa.exceptions import ModelDoesNotExist
+from docar import documents
+from docar import fields
+from docar import Document
+from docar.exceptions import ModelDoesNotExist
 
 from app import Article, ArticleModel
 #from app import Editor, EditorModel

@@ -4,8 +4,8 @@ import copy
 
 from bisect import bisect
 
-from roa.fields import Field, NOT_PROVIDED
-from roa.exceptions import ModelDoesNotExist
+from .fields import Field, NOT_PROVIDED
+from .exceptions import ModelDoesNotExist
 
 
 DEFAULT_NAMES = ('identifier', 'model', 'excludes')

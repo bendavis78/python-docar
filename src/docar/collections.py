@@ -1,4 +1,4 @@
-from documents import Document
+from .documents import Document
 
 
 class Collection(object):
