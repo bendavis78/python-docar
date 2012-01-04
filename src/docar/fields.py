@@ -45,8 +45,16 @@ class NumberField(Field):
         super(NumberField, self).__init__(*args, **kwargs)
 
 
-## Structured Datatypes.
+## Derived Basic Types
+class StaticField(StringField):
+    """A static field that always has the same value."""
+    def __init__(self, *args, **kwargs):
+        self.value = kwargs['value']
+        del kwargs['value']
+        super(StaticField, self).__init__(*args, **kwargs)
 
+
+## Structured Datatypes.
 class CollectionField(Field):
     """An ordered list of zero or more referenced documents."""
     def __init__(self, *args, **kwargs):

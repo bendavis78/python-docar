@@ -36,6 +36,14 @@ class when_an_integer_field_gets_instantiated(unittest.TestCase):
         eq_(1, self.integer_field.default)
 
 
+class when_a_static_field_gets_instantiated(unittest.TestCase):
+    def setUp(self):
+        self.static_field = fields.StaticField(value="static")
+
+    def it_has_a_value(self):
+        eq_("static", self.static_field.value)
+
+
 class when_an_object_field_gets_instantiated(unittest.TestCase):
     def setUp(self):
         self.object_field = fields.ObjectField()
