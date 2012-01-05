@@ -6,6 +6,7 @@ from bisect import bisect
 
 from .fields import Field, NOT_PROVIDED
 from .exceptions import ModelDoesNotExist
+#AmbigiousModelMapping
 
 
 DEFAULT_NAMES = ('identifier', 'model', 'excludes')
@@ -28,7 +29,7 @@ class Options(object):
     def __init__(self, meta):
         # Initialize some default values
         self.model = None
-        self.identifier = 'id'
+        self.identifier = ['id']
         # FIXME: Do some type checking
         self.excludes = []
         self.local_fields = []
@@ -45,13 +46,20 @@ class Options(object):
         self.related_fields.insert(bisect(self.local_fields, field), field)
 
     def contribute_to_class(self, cls, name):
-        # This is bluntly stolen from django
-        # Set first thedefault values
+        # This is bluntly stolen from the django orm
+        # Set first the default values
         cls._meta = self
 
         # Then override it with values from the ``Meta`` class
         if self.meta:
             meta_attrs = self.meta
+
+            # We should make sure that `identifier` is a list
+            if 'identifier' in meta_attrs:
+                if type(meta_attrs['identifier']) is types.StringType:
+                    # we assume the identifier has been specified as a string
+                    meta_attrs['identifier'] = [meta_attrs['identifier']]
+
             for attr_name in DEFAULT_NAMES:
                 if attr_name in meta_attrs:
                     setattr(self, attr_name, meta_attrs.pop(attr_name))
@@ -176,8 +184,14 @@ class Document(object):
         obj.save()
 
     def fetch(self):
+        """Fetch the model from the backend to create the representation of
+        this resource."""
+        params = {}
+        for elem in range(len(self._meta.identifier)):
+            params[self._meta.identifier[elem]] = getattr(self,
+                    self._meta.identifier[elem])
         try:
-            obj = self._meta.model.objects.get(id=self.id)
+            obj = self._meta.model.objects.get(**params)
         except self._meta.model.DoesNotExist:
             raise ModelDoesNotExist
 

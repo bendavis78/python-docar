@@ -18,9 +18,13 @@ TagModel.DoesNotExist = Exception
 class Editor(Document):
     first_name = fields.StringField()
     last_name = fields.StringField()
+    age = fields.NumberField()
 
     class Meta:
         model = EditorModel
+        identifier = [
+                'first_name',
+                'last_name']
 
 
 class Tag(Document):

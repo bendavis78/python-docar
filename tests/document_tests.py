@@ -9,9 +9,10 @@ from docar import documents
 from docar import fields
 from docar import Document
 from docar.exceptions import ModelDoesNotExist
+#from docar.exceptions import AmbigiousModelMapping
 
 from app import Article, ArticleModel
-#from app import Editor, EditorModel
+from app import Editor, EditorModel
 
 
 BASKET = {
@@ -80,7 +81,44 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_(True, hasattr(self.article._meta, 'excludes'))
         eq_([], self.article._meta.excludes)
         eq_(True, hasattr(self.article._meta, 'identifier'))
-        eq_('id', self.article._meta.identifier)
+        eq_(['id'], self.article._meta.identifier)
+
+    def it_converts_string_identifiers_to_a_list_of_identifiers(self):
+        class Doc(Document):
+            name = fields.StringField()
+            age = fields.NumberField()
+
+            class Meta:
+                identifier = 'name'
+
+        class Doc2(Document):
+            name = fields.StringField()
+            age = fields.NumberField()
+
+            class Meta:
+                identifier = ['name', 'age']
+
+        d = Doc()
+        eq_(['name'], d._meta.identifier)
+
+        d = Doc2()
+        eq_(['name', 'age'], d._meta.identifier)
+
+    def it_can_determine_the_right_model_using_defined_identifiers(self):
+        # Prepare a valid editor resource
+        editor = Editor({
+            'first_name': 'Christo',
+            'last_name': 'Buschek'})
+        mock_editor = EditorModel.return_value
+        mock_editor.first_name = "Christo"
+        mock_editor.last_name = "Buschek"
+        mock_editor.age = 31
+
+        EditorModel.objects.get.return_value = mock_editor
+
+        # the editor should fetch the age correctly
+        editor.fetch()
+        eq_(31, editor.age)
 
     def it_stores_the_declared_fields_in_the_right_order(self):
         special = SpecialFruitBasket()
@@ -154,7 +192,7 @@ class when_a_document_inherits_from_another_document(unittest.TestCase):
 
         doc = BaseDocument()
         eq_(['id'], doc._meta.excludes)
-        eq_('name', doc._meta.identifier)
+        eq_(['name'], doc._meta.identifier)
 
         class ChildDocument(BaseDocument):
             class Meta(BaseDocument.Meta):
@@ -162,7 +200,7 @@ class when_a_document_inherits_from_another_document(unittest.TestCase):
 
         doc = ChildDocument()
         eq_(['id', 'key'], doc._meta.excludes)
-        eq_('id', doc._meta.identifier)
+        eq_(['id'], doc._meta.identifier)
 
     def it_inherits_all_fields(self):
         # that should be the total amount of fields for the inherited document
