@@ -60,7 +60,7 @@ class when_a_foreign_key_field_gets_instantiated(unittest.TestCase):
 
         class Klass(Document):
             id = fields.NumberField()
-            f = fields.ForeignKey(Article)
+            f = fields.ForeignDocument(Article)
 
         #document = Mock(name="DocumentClass", spec=['id', '_meta'])
 

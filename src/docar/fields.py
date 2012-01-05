@@ -69,15 +69,18 @@ class ObjectField(Field):
 
 
 ## Related Fields
-
-class ForeignKey(Field):
+class ForeignDocument(Field):
     """A reference to another document."""
     def __init__(self, *args, **kwargs):
-        super(ForeignKey, self).__init__(*args, **kwargs)
+        super(ForeignDocument, self).__init__(*args, **kwargs)
 
     def contribute_to_class(self, cls, name):
         """Contribute ``self`` to ``cls``. Used to set several field specific
         attributes. Called during class creation in ``DocumentBase``."""
-        super(ForeignKey, self).contribute_to_class(cls, name)
+        super(ForeignDocument, self).contribute_to_class(cls, name)
 
         cls._meta.add_related_field(self)
+
+
+class SingleForeignField(ForeignDocument):
+    pass
