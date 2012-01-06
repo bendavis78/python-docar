@@ -3,7 +3,6 @@ import types
 import json
 
 from nose.tools import eq_, assert_raises
-from nose.exc import SkipTest
 from mock import Mock
 
 from docar import documents
@@ -318,7 +317,6 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
         article.fetch()
 
         eq_(expected, json.loads(article.to_json()))
-        raise SkipTest
         eq_([("objects.get", {
                 "first_name": "Christo",
                 "last_name": "Buschek"}

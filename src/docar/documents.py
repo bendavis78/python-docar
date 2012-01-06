@@ -4,7 +4,7 @@ import copy
 
 from bisect import bisect
 
-from .fields import Field, NOT_PROVIDED
+from .fields import Field, ForeignDocument, NOT_PROVIDED
 from .exceptions import ModelDoesNotExist
 #AmbigiousModelMapping
 
@@ -163,21 +163,21 @@ class Document(object):
         """Render this document to a python dictionary."""
         data = {}
         related = {}
-        # retrieve the related documents first
-        for field in self._meta.related_fields:
-            identifier = field.Document._meta.identifier[0]
-            doc = field.Document({
-                identifier: getattr(self, "%s_id" % field.name)})
-            doc.fetch()
-            related[field.name] = {
-                    'rel': 'related',
-                    'href': doc.uri()
-                    }
 
-        #FIXME: replace self.fields with self._meta.local_fields
-        for field_name in self.fields.keys():
-            data[field_name] = getattr(self, field_name)
+        # Cycle all registered fields, and fill the data dict
+        for field in self._meta.local_fields:
+            if isinstance(field, ForeignDocument):
+                #FIXME: determine not bound or optional foreign documents
+                # fill the related dict
+                elem = getattr(self, field.name)
+                related[field.name] = {
+                        'rel': 'related',
+                        'href': elem.uri()}
+            else:
+                data[field.name] = getattr(self, field.name)
+        # update the data dict with the related fields
         data.update(related)
+
         return data
 
     def save(self):
@@ -224,6 +224,16 @@ class Document(object):
                 # that one
                 fetch_field = getattr(self, "fetch_%s_field" % field.name)
                 setattr(self, field.name, fetch_field())
+            elif isinstance(field, ForeignDocument):
+                # retrieve the related document
+                kwargs = {}
+                related_instance = getattr(obj, field.name)
+                Document = field.Document
+                for identifier in Document._meta.identifier:
+                    kwargs[identifier] = getattr(related_instance, identifier)
+                document = Document(kwargs)
+                document.fetch()
+                setattr(self, field.name, document)
             elif hasattr(obj, field.name):
                 # Otherwise set the value of the field from the retrieved model
                 # object

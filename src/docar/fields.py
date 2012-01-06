@@ -81,12 +81,3 @@ class ForeignDocument(Field):
         super(ForeignDocument, self).contribute_to_class(cls, name)
 
         cls._meta.add_related_field(self)
-
-
-class SingleForeignDocumentField(ForeignDocument):
-    """Reference a single field of a foreign document.
-
-    The purpose of this field is to reference a single attribute of a
-    referenced document.
-    """
-    pass
