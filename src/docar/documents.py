@@ -184,6 +184,7 @@ class Document(object):
         """Save the document in a django model backend."""
         #FIXME: Handle the fact if the document is not mapped to a model
         # First see if the model already exists
+        #FIXME: This is django specific code, its too tightly coupled
         try:
             obj = self._meta.model.objects.get(id=self.id)
         except self._meta.model.DoesNotExist:
@@ -211,6 +212,8 @@ class Document(object):
         for elem in range(len(self._meta.identifier)):
             params[self._meta.identifier[elem]] = getattr(self,
                     self._meta.identifier[elem])
+
+        #FIXME: This is django specific code, its too tightly coupled
         try:
             obj = self._meta.model.objects.get(**params)
         except self._meta.model.DoesNotExist:

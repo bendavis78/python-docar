@@ -12,6 +12,18 @@ class ModelManager(object):
 
         self._manager = Manager()
 
+    def fetch(self, *args, **kwargs):
+        # A stub, call the specific model manager method
+        return self._manager.fetch(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        # A stub, call the specific model manager method
+        return self._manager.save(*args, **kwargs)
+
 
 class DjangoModelManager(object):
-    pass
+    def fetch(self, *args, **kwargs):
+        pass
+
+    def save(self, *args, **kwargs):
+        pass
