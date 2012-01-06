@@ -1,4 +1,5 @@
 from .documents import Document
+from .exceptions import CollectionNotBound
 
 
 class Collection(object):
@@ -16,13 +17,18 @@ class Collection(object):
     :type documents: Document
 
     """
+    document = None
+
     def __init__(self, documents=None):
         if not self.document:
             #FIXME: raise and exception, a collection must be bound
-            pass
+            raise CollectionNotBound
+
         self.collection_set = []
-        for doc in documents:
-            self.add(doc)
+        if documents:
+            # Add the supplied documents to the collection
+            for doc in documents:
+                self.add(doc)
 
     def add(self, doc):
         if not isinstance(doc, Document):

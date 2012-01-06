@@ -15,7 +15,7 @@ class DjangoModelManager(object):
     model_type = 'django'
 
     def fetch(self, *args, **kwargs):
-        pass
+        return
 
     def save(self, *args, **kwargs):
-        pass
+        return
