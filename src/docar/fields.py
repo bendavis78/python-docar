@@ -26,7 +26,7 @@ class Field(object):
         cls._meta.add_field(self)
 
 
-## Primitive Datatype
+## Primitive Datatypes
 class BooleanField(Field):
     """A datatype representing true or false."""
     def __init__(self, *args, **kwargs):
@@ -72,6 +72,7 @@ class ObjectField(Field):
 class ForeignDocument(Field):
     """A reference to another document."""
     def __init__(self, *args, **kwargs):
+        self.Document = args[0]
         super(ForeignDocument, self).__init__(*args, **kwargs)
 
     def contribute_to_class(self, cls, name):
@@ -82,5 +83,10 @@ class ForeignDocument(Field):
         cls._meta.add_related_field(self)
 
 
-class SingleForeignField(ForeignDocument):
+class SingleForeignDocumentField(ForeignDocument):
+    """Reference a single field of a foreign document.
+
+    The purpose of this field is to reference a single attribute of a
+    referenced document.
+    """
     pass

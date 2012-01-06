@@ -38,6 +38,9 @@ class FruitBasket(documents.Document):
     class Meta:
         model = 'haha'
 
+    def uri(self):
+        return "http://localhost/basket/1/"
+
 
 class SpecialFruitBasket(FruitBasket):
     is_present = fields.BooleanField()
@@ -223,10 +226,17 @@ class when_a_document_is_bound(unittest.TestCase):
         eq_(BASKET, self.basket.to_attributes())
 
     def it_can_collect_links(self):
-        self.basket._compute_uri = Mock()
-        self.basket._compute_uri.return_value = 'http://localhost/basket/1/'
-
         eq_('http://localhost/basket/1/', self.basket.uri())
+
+    def it_can_provide_a_link_using_the_django_model(self):
+        mock_editor = Mock()
+        mock_editor.get_absolute_url.return_value = \
+                "http://localhost/editor/1/"
+        EditorModel.objects.get.return_value = mock_editor
+
+        editor = Editor({'id': 1})
+        editor.fetch()
+        eq_("http://localhost/editor/1/", editor.uri())
 
     def it_can_be_saved_to_a_django_model(self):
         # Mock the actual django model
@@ -273,3 +283,37 @@ class when_a_document_is_bound(unittest.TestCase):
         # The attributes of the model should be set
         eq_(24, mock_model.id)
         eq_('hello universe', mock_model.name)
+
+
+class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
+    def it_can_render_the_document_inline(self):
+        #prepare the setup
+        mock_editor = Mock()
+        mock_editor.age = 31
+        mock_editor.first_name = 'Christo'
+        mock_editor.last_name = 'Buschek'
+        mock_editor.get_absolute_url.return_value = \
+                "http://localhost/editor/1/"
+
+        EditorModel.objects.get.return_value = mock_editor
+
+        mock_article = Mock()
+        mock_article.id = 1
+        mock_article.name = "Headline"
+        mock_article.editor = mock_editor
+
+        ArticleModel.objects.get.return_value = mock_article
+
+        expected = {
+                'id': 1,
+                'name': 'Headline',
+                'editor': {
+                    'rel': 'related',
+                    'href': 'http://localhost/editor/1/'
+                    }
+                }
+
+        article = Article({'id': 1})
+        article.fetch()
+
+        eq_(expected, json.loads(article.to_json()))

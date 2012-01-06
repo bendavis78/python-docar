@@ -162,10 +162,21 @@ class Document(object):
     def to_attributes(self):
         """Render this document to a python dictionary."""
         data = {}
+        related = {}
+        # retrieve the related documents first
+        for field in self._meta.related_fields:
+            identifier = field.Document._meta.identifier[0]
+            doc = field.Document({
+                identifier: getattr(self, "%s_id" % field.name)})
+            doc.fetch()
+            related[field.name] = {
+                    'rel': 'related',
+                    'href': doc.uri()
+                    }
 
         for field_name in self.fields.keys():
             data[field_name] = getattr(self, field_name)
-
+        data.update(related)
         return data
 
     def save(self):
@@ -195,6 +206,8 @@ class Document(object):
         except self._meta.model.DoesNotExist:
             raise ModelDoesNotExist
 
+        self._meta.model_instance = obj
+
         for field in self._meta.local_fields:
             if hasattr(obj, field.name):
                 setattr(self, field.name, getattr(obj, field.name))
@@ -220,9 +233,5 @@ class Document(object):
             This method should always return the absolute URI as a string.
 
         """
-        return self._compute_uri()
-
-    def _compute_uri(self):
-        """The mechanism to compute the uri of this resource."""
-        #FIXME: Implement the django get_absolute_uri handler
-        pass
+        #FIXME: This is django centric
+        return self._meta.model_instance.get_absolute_url()

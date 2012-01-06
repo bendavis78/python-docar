@@ -43,7 +43,7 @@ class Article(Document):
     id = fields.NumberField()
     name = fields.StringField()
     #tags = fields.CollectionField(TagCloud)
-    #editor = fields.ObjectField(Editor)
+    editor = fields.ForeignDocument(Editor)
     #published = fields.ChoiceField(choices=PUBLISH_CHOICES)
 
     class Meta:
