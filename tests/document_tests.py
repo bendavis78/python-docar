@@ -317,3 +317,38 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
         article.fetch()
 
         eq_(expected, json.loads(article.to_json()))
+
+
+class when_a_document_field_cant_be_mapped_to_a_model(unittest.TestCase):
+    def it_can_provide_a_fetch_method(self):
+        # Mock the actual django model
+        DjangoModel = Mock(name='DjangoModel')
+
+        class ModelDocument(documents.Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+
+            class Meta:
+                # Use the mocked django model
+                model = DjangoModel
+
+            def fetch_name_field(self):
+                return "Hello World"
+
+            save_name_field = Mock()  # make sure this method has been called
+
+        # create the mocked instance of the model
+        mock_model = Mock()
+        mock_model.id = 1
+        mock_model = DjangoModel.objects.get.return_value
+
+        # retrieve the document
+        doc = ModelDocument({'id': 1})
+        doc.fetch()
+
+        eq_("Hello World", doc.name)
+
+        # Now also save the document to the model, make sure the save overwrite
+        # method is used
+        doc.save()
+        eq_(True, doc.save_name_field.called)

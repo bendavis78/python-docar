@@ -63,8 +63,8 @@ class Options(object):
             for attr_name in DEFAULT_NAMES:
                 if attr_name in meta_attrs:
                     setattr(self, attr_name, meta_attrs.pop(attr_name))
-                elif hasattr(self.meta, attr_name):
-                    setattr(self, attr_name, getattr(self.meta, attr_name))
+                #elif hasattr(self.meta, attr_name):
+                #    setattr(self, attr_name, getattr(self.meta, attr_name))
 
 
 class DocumentBase(type):
@@ -174,6 +174,7 @@ class Document(object):
                     'href': doc.uri()
                     }
 
+        #FIXME: replace self.fields with self._meta.local_fields
         for field_name in self.fields.keys():
             data[field_name] = getattr(self, field_name)
         data.update(related)
@@ -191,6 +192,15 @@ class Document(object):
 
         # populate the obj with the documents state
         for field in self._meta.local_fields:
+            if hasattr(self, "save_%s_field" % field.name):
+                # We have a save method for this field
+                save_field = getattr(self, "save_%s_field" % field.name)
+                setattr(obj, field.name, save_field())
+
+                # skip to the next iteration
+                continue
+
+            # No save method has been provided, lets map the fields one to one.
             setattr(obj, field.name, getattr(self, field.name))
         obj.save()
 
@@ -209,7 +219,14 @@ class Document(object):
         self._meta.model_instance = obj
 
         for field in self._meta.local_fields:
-            if hasattr(obj, field.name):
+            if hasattr(self, "fetch_%s_field" % field.name):
+                # If the document provides a fetch method for this field, use
+                # that one
+                fetch_field = getattr(self, "fetch_%s_field" % field.name)
+                setattr(self, field.name, fetch_field())
+            elif hasattr(obj, field.name):
+                # Otherwise set the value of the field from the retrieved model
+                # object
                 setattr(self, field.name, getattr(obj, field.name))
 
     def delete(self):
