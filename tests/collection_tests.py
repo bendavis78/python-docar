@@ -39,6 +39,16 @@ class when_a_collection_gets_instantiated(unittest.TestCase):
         eq_(1, len(newspaper.collection_set))
         eq_([doc1], newspaper.collection_set)
 
+    def it_doesnt_add_instances_to_the_collection_that_are_not_documents(self):
+        class A(object):
+            pass
+
+        newspaper = NewsPaper()
+
+        eq_(0, len(newspaper.collection_set))
+        newspaper.add(A())
+        eq_(0, len(newspaper.collection_set))
+
     def it_can_render_to_a_python_list(self):
         #prepare the setup
         mock_editor = Mock()
