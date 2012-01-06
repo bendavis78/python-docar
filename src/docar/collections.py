@@ -1,3 +1,5 @@
+import json
+
 from .documents import Document
 from .exceptions import CollectionNotBound
 
@@ -37,3 +39,14 @@ class Collection(object):
         else:
             # Append the document
             self.collection_set.append(doc)
+
+    def to_attributes(self):
+        data = []
+        for document in self.collection_set:
+            document.fetch()
+            data.append(document.to_attributes())
+
+        return data
+
+    def to_json(self):
+        return json.dumps(self.to_attributes())

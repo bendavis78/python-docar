@@ -161,7 +161,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         doc1 = Article({'id': 1})
 
         # we mock the model object
-        mock_model = ArticleModel.return_value
+        mock_model = Mock()
         ArticleModel.objects.get.return_value = mock_model
 
         # delete the model
@@ -289,6 +289,7 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
     def it_can_render_the_document_inline(self):
         #prepare the setup
         mock_editor = Mock()
+        mock_editor.id = 1
         mock_editor.age = 31
         mock_editor.first_name = 'Christo'
         mock_editor.last_name = 'Buschek'
@@ -296,6 +297,7 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
                 "http://localhost/editor/1/"
 
         EditorModel.objects.get.return_value = mock_editor
+        EditorModel.reset_mock()
 
         mock_article = Mock()
         mock_article.id = 1
@@ -315,7 +317,6 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
 
         article = Article({'id': 1})
         article.fetch()
-
         eq_(expected, json.loads(article.to_json()))
         eq_([("objects.get", {
                 "first_name": "Christo",
