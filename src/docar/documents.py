@@ -214,7 +214,7 @@ class Document(object):
         try:
             obj = self._meta.model.objects.get(**params)
         except self._meta.model.DoesNotExist:
-            raise ModelDoesNotExist
+            raise ModelDoesNotExist(self._meta.model)
 
         self._meta.model_instance = obj
 
