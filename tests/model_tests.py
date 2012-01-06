@@ -17,7 +17,7 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
 
     def it_abstracts_a_specific_model_manager(self):
         manager = ModelManager('django')
-        ok_(isinstance(manager._manager, DjangoModelManager))
+        ok_(isinstance(manager, DjangoModelManager))
 
     def it_can_fetch_and_save_to_the_specific_model_manager(self):
         with patch('docar.models.DjangoModelManager') as mock:
@@ -25,7 +25,7 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
             mock_manager = mock.return_value
             manager = ModelManager('django')
             # first assert that the manager is really mocked
-            ok_(isinstance(manager._manager, Mock))
+            ok_(isinstance(manager, Mock))
             manager.fetch()
             manager.save()
             eq_(True, mock_manager.fetch.called)
