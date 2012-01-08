@@ -30,6 +30,46 @@ class when_a_collection_gets_instantiated(unittest.TestCase):
         eq_(2, len(newspaper.collection_set))
         eq_([doc1, doc2], newspaper.collection_set)
 
+    def it_fetches_all_documents_from_a_list(self):
+        query_list = [
+                {'id': 1},
+                {'id': 2},
+                {'id': 3},
+                ]
+        DjangoModel = Mock(name='DjangoModel')
+        model_list = [Mock(), Mock(), Mock()]
+
+        def get_side_effect(*args, **kwargs):
+            return model_list.pop()
+
+        DjangoModel.objects.get.side_effect = get_side_effect
+
+        class Doc(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = DjangoModel
+
+        class Col(Collection):
+            document = Doc
+
+        c = Col()
+
+        # create a collection with all documents
+        c.fetch_all(query_list)
+
+        # The fetch_all must have created a collection with 3 documents
+        eq_(3, len(c.collection_set))
+
+        # The fetch_all must have queried 3x the backend model
+        expected_calls = [
+                ('objects.get', {'id': 1}),
+                ('objects.get', {'id': 2}),
+                ('objects.get', {'id': 3}),
+                ]
+
+        eq_(expected_calls, DjangoModel.method_calls)
+
     def it_can_append_new_documents(self):
         doc1 = Article({'id': 1, 'name': 'doc1'})
         newspaper = NewsPaper()

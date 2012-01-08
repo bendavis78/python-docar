@@ -40,6 +40,12 @@ class Collection(object):
             # Append the document
             self.collection_set.append(doc)
 
+    def fetch_all(self, query_list=[]):
+        for item in query_list:
+            doc = self.document(item)
+            doc.fetch()
+            self.add(doc)
+
     def to_attributes(self):
         data = []
         for document in self.collection_set:
