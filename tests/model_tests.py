@@ -30,3 +30,35 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
             manager.save()
             eq_(True, mock_manager.fetch.called)
             eq_(True, mock_manager.save.called)
+
+    def it_can_fetch_data_from_the_underlying_model(self):
+        DjangoModel = Mock(name="DjangoModel")
+        mock_model = Mock()
+        DjangoModel.objects.get.return_value = mock_model
+
+        manager = ModelManager('django')
+        # The manager needs to know which model it connects to
+        # This is normally done when the Document is created.
+        manager._model = DjangoModel
+
+        # make sure we are working with correct expectations
+        eq_(DjangoModelManager, type(manager))
+        eq_(mock_model, manager.fetch(id=1))
+        eq_([('objects.get', {'id': 1})], DjangoModel.method_calls)
+
+    def it_can_save_data_to_the_underlying_model(self):
+        DjangoModel = Mock(name="DjangoModel")
+        mock_model = Mock()
+        DjangoModel.objects.get.return_value = mock_model
+
+        manager = ModelManager('django')
+        # The manager needs to know which model it connects to
+        # This is normally done when the Document is created.
+        manager._model = DjangoModel
+
+        # make sure we are working with correct expectations
+        eq_(DjangoModelManager, type(manager))
+
+        # the manager.save() method doesn't return on success
+        manager.save(id=1)
+        eq_([('objects.get', {'id': 1})], DjangoModel.method_calls)

@@ -72,5 +72,5 @@ class when_a_collection_field_gets_instantiated(unittest.TestCase):
     def setUp(self):
         self.collection_field = fields.CollectionField()
 
-    def it_is_an_empty_list(self):
-        eq_([], self.collection_field.default)
+    def it_defaults_to_NOT_PROVIDED(self):
+        eq_(fields.NOT_PROVIDED, self.collection_field.default)

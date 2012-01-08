@@ -5,7 +5,7 @@ import copy
 from bisect import bisect
 
 from .fields import Field, ForeignDocument, NOT_PROVIDED
-from .exceptions import ModelDoesNotExist
+from .models import ModelManager
 #AmbigiousModelMapping
 
 
@@ -115,6 +115,10 @@ class DocumentBase(type):
         for field in new_class._meta.related_fields:
             setattr(new_class, "%s_id" % field.name, None)
 
+        # Add the model manager
+        new_class._model_manager = ModelManager('django')
+        new_class._model_manager._model = new_class._meta.model
+
         return new_class
 
     def add_to_class(cls, name, obj):
@@ -183,41 +187,34 @@ class Document(object):
     def save(self):
         """Save the document in a django model backend."""
         #FIXME: Handle the fact if the document is not mapped to a model
-        # First see if the model already exists
-        #FIXME: This is django specific code, its too tightly coupled
-        try:
-            obj = self._meta.model.objects.get(id=self.id)
-        except self._meta.model.DoesNotExist:
-            # We assume it gets newly created
-            obj = self._meta.model()
+        data = {}
 
-        # populate the obj with the documents state
+        # populate the data_dict with the documents state
         for field in self._meta.local_fields:
             if hasattr(self, "save_%s_field" % field.name):
                 # We have a save method for this field
                 save_field = getattr(self, "save_%s_field" % field.name)
-                setattr(obj, field.name, save_field())
+                data[field.name] = save_field()
 
                 # skip to the next iteration
                 continue
 
             # No save method has been provided, lets map the fields one to one.
-            setattr(obj, field.name, getattr(self, field.name))
-        obj.save()
+            data[field.name] = getattr(self, field.name)
+
+        self._model_manager.save(**data)
 
     def fetch(self):
         """Fetch the model from the backend to create the representation of
         this resource."""
         params = {}
+        # Construct the query dict
         for elem in range(len(self._meta.identifier)):
             params[self._meta.identifier[elem]] = getattr(self,
                     self._meta.identifier[elem])
 
-        #FIXME: This is django specific code, its too tightly coupled
-        try:
-            obj = self._meta.model.objects.get(**params)
-        except self._meta.model.DoesNotExist:
-            raise ModelDoesNotExist(self._meta.model)
+        # Retrieve the object from the backend
+        obj = self._model_manager.fetch(**params)
 
         self._meta.model_instance = obj
 

@@ -58,7 +58,7 @@ class StaticField(StringField):
 class CollectionField(Field):
     """An ordered list of zero or more referenced documents."""
     def __init__(self, *args, **kwargs):
-        super(CollectionField, self).__init__(default=[], *args, **kwargs)
+        super(CollectionField, self).__init__(*args, **kwargs)
 
 
 class ObjectField(Field):

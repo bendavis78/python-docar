@@ -1,5 +1,7 @@
 import sys
 
+from .exceptions import ModelDoesNotExist
+
 
 class ModelManager(object):
     def __new__(self, model_type='django'):
@@ -15,7 +17,19 @@ class DjangoModelManager(object):
     model_type = 'django'
 
     def fetch(self, *args, **kwargs):
-        return
+        try:
+            instance = self._model.objects.get(**kwargs)
+        except self._model.DoesNotExist:
+            raise ModelDoesNotExist("Fetch failed for %s" % str(self._model))
+
+        return instance
 
     def save(self, *args, **kwargs):
-        return
+        try:
+            # First try to retrieve the existing model if it exists
+            instance = self._model.objects.get(**kwargs)
+        except self._model.DoesNotExist:
+            # if not we are creating a new model
+            instance = self._model(**kwargs)
+
+        instance.save()
