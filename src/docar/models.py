@@ -25,13 +25,21 @@ class DjangoModelManager(object):
         self.instance = instance
         return instance
 
-    def save(self, *args, **kwargs):
+    def save(self, identifier, *args, **kwargs):
+        select_dict = {}
+        for elem in identifier:
+            select_dict[elem] = kwargs[elem]
+
         try:
             # First try to retrieve the existing model if it exists
-            instance = self._model.objects.get(**kwargs)
+            instance = self._model.objects.get(**select_dict)
         except self._model.DoesNotExist:
             # if not we are creating a new model
             instance = self._model(**kwargs)
+
+        #FIXME: Whats with foreign relations?
+        for elem, value in kwargs.iteritems():
+            setattr(instance, elem, value)
 
         instance.save()
 

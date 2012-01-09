@@ -60,5 +60,5 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         eq_(DjangoModelManager, type(manager))
 
         # the manager.save() method doesn't return on success
-        manager.save(id=1)
+        manager.save(['id'], id=1)
         eq_([('objects.get', {'id': 1})], DjangoModel.method_calls)

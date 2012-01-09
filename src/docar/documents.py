@@ -209,7 +209,7 @@ class Document(object):
             # No save method has been provided, lets map the fields one to one.
             data[field.name] = getattr(self, field.name)
 
-        self._model_manager.save(**data)
+        self._model_manager.save(self._meta.identifier, **data)
 
     def fetch(self):
         """Fetch the model from the backend to create the representation of
