@@ -180,6 +180,34 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_(True, hasattr(doc1, '_model_manager'))
         eq_(DjangoModelManager, type(doc1._model_manager))
 
+    def it_doesnt_render_optional_fields_that_are_none(self):
+        DocModel = Mock(name='DocModel')
+        mock_doc = Mock()
+        mock_doc.id = 1
+        mock_doc.name = None
+        DocModel.objects.get.return_value = mock_doc
+
+        class Doc(Document):
+            id = fields.NumberField()
+            name = fields.StringField(optional=True)
+
+            class Meta:
+                model = DocModel
+
+        expected = {'id': 1}
+        doc = Doc({'id': 1})
+        doc.fetch()
+
+        # name is not set, so don't render it
+        eq_(expected, json.loads(doc.to_json()))
+
+        # now set name and make sure it gets rendered
+        mock_doc.name = 'hello'
+        expected = {'id': 1, 'name': 'hello'}
+        doc = Doc({'id': 1})
+        doc.fetch()
+        eq_(expected, json.loads(doc.to_json()))
+
 
 class when_a_representation_is_parsed(unittest.TestCase):
     def setUp(self):

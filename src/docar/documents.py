@@ -170,6 +170,9 @@ class Document(object):
 
         # Cycle all registered fields, and fill the data dict
         for field in self._meta.local_fields:
+            if field.optional and not getattr(self, field.name):
+                # The field is optional and not set, ignore it
+                continue
             if isinstance(field, ForeignDocument):
                 #FIXME: determine not bound or optional foreign documents
                 # fill the related dict
