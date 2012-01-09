@@ -114,6 +114,9 @@ class when_a_collection_gets_instantiated(unittest.TestCase):
             class Meta:
                 model = MockModel
 
+            def uri(self):
+                return "link"
+
         mock_article1 = Mock()
         mock_article1.id = 1
         mock_article1.name = "Headline"
@@ -137,8 +140,10 @@ class when_a_collection_gets_instantiated(unittest.TestCase):
         newspaper = NewsPaper([doc1, doc2])
 
         expected = [
-                {'id': 1, 'name': 'Headline', 'editor': editor_dict},
-                {'id': 2, 'name': 'Headline', 'editor': editor_dict},
+                {'id': 1, 'name': 'Headline', 'editor': editor_dict, "link": {
+                    "rel": "self", "href": "link"}},
+                {'id': 2, 'name': 'Headline', 'editor': editor_dict, "link": {
+                    "rel": "self", "href": "link"}},
                 ]
 
         eq_(expected, json.loads(newspaper.to_json()))

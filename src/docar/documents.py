@@ -185,6 +185,10 @@ class Document(object):
         # update the data dict with the related fields
         data.update(related)
 
+        # add the link to itself
+        data['link'] = {
+                'rel': 'self',
+                'href': self.uri()}
         return data
 
     def save(self):
@@ -264,4 +268,4 @@ class Document(object):
 
         """
         #FIXME: This is django centric
-        return self._meta.model_instance.get_absolute_url()
+        return self._model_manager.uri()

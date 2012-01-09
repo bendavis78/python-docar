@@ -22,6 +22,7 @@ class DjangoModelManager(object):
         except self._model.DoesNotExist:
             raise ModelDoesNotExist("Fetch failed for %s" % str(self._model))
 
+        self.instance = instance
         return instance
 
     def save(self, *args, **kwargs):
@@ -33,3 +34,6 @@ class DjangoModelManager(object):
             instance = self._model(**kwargs)
 
         instance.save()
+
+    def uri(self):
+        return self.instance.get_absolute_url()

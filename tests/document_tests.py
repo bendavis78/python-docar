@@ -18,7 +18,11 @@ from app import Editor, EditorModel
 
 BASKET = {
         "is_rotten": True,
-        "name": "Lovely Basket"
+        "name": "Lovely Basket",
+        "link": {
+            "rel": "self",
+            "href": "http://localhost/basket/1/"
+            }
         }
 
 FRUIT_CHOICES = (
@@ -180,11 +184,12 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_(True, hasattr(doc1, '_model_manager'))
         eq_(DjangoModelManager, type(doc1._model_manager))
 
-    def it_doesnt_render_optional_fields_that_are_none(self):
+    def it_doesnt_render_optional_fields_that_are_set_to_none(self):
         DocModel = Mock(name='DocModel')
         mock_doc = Mock()
         mock_doc.id = 1
         mock_doc.name = None
+        mock_doc.get_absolute_url.return_value = "link"
         DocModel.objects.get.return_value = mock_doc
 
         class Doc(Document):
@@ -194,7 +199,9 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             class Meta:
                 model = DocModel
 
-        expected = {'id': 1}
+        expected = {'id': 1, 'link': {
+            'rel': 'self',
+            'href': 'link'}}
         doc = Doc({'id': 1})
         doc.fetch()
 
@@ -203,7 +210,9 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
         # now set name and make sure it gets rendered
         mock_doc.name = 'hello'
-        expected = {'id': 1, 'name': 'hello'}
+        expected = {'id': 1, 'name': 'hello', 'link': {
+            'rel': 'self',
+            'href': 'link'}}
         doc = Doc({'id': 1})
         doc.fetch()
         eq_(expected, json.loads(doc.to_json()))
@@ -337,6 +346,7 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
         mock_article = Mock()
         mock_article.id = 1
         mock_article.name = "Headline"
+        mock_article.get_absolute_url.return_value = "link"
         mock_article.editor = mock_editor
 
         ArticleModel.objects.get.return_value = mock_article
@@ -349,6 +359,10 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
                     'href': 'http://localhost/editor/1/'
                     },
                 #'tags': []
+                'link': {
+                    'rel': 'self',
+                    'href': mock_article.get_absolute_url()
+                    }
                 }
 
         article = Article({'id': 1})
