@@ -215,6 +215,15 @@ class Document(object):
         self._model_manager.save(self._meta.identifier,
                 **self._get_document_state())
 
+    def update(self, data):
+        # FIXME: Handle ForeignDocument relations
+        # First update the own document state with the new values
+        for k, v in data.iteritems():
+            setattr(self, k, v)
+
+        # save the representation to the model
+        self.save()
+
     def fetch(self):
         """Fetch the model from the backend to create the representation of
         this resource."""

@@ -362,6 +362,31 @@ class when_a_document_is_bound(unittest.TestCase):
         eq_(True, DjangoModel.objects.get.called)
         eq_(True, mock_model.delete.called)
 
+    def it_can_update_the_underlying_model(self):
+        # Mock the actual django model
+        DjangoModel = Mock(name='DjangoModel')
+
+        class ModelDocument(documents.Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+
+            class Meta:
+                # Use the mocked django model
+                model = DjangoModel
+
+        # create the mocked instance of the model
+        mock_model = DjangoModel.return_value
+        DjangoModel.DoesNotExist = Exception
+        DjangoModel.objects.get.return_value = mock_model
+
+        # The expectation is that this instance gets newly created
+        instance = ModelDocument({'id': 24, 'name': 'hello universe'})
+        instance.update({'name': 'new name'})
+
+        eq_('new name', instance.name)
+        eq_(True, DjangoModel.objects.get.called)
+        eq_(True, mock_model.save.called)
+
 
 class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
     def it_can_render_the_document_inline(self):
