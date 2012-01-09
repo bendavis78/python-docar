@@ -191,8 +191,7 @@ class Document(object):
                 'href': self.uri()}
         return data
 
-    def save(self):
-        """Save the document in a django model backend."""
+    def _get_document_state(self):
         #FIXME: Handle the fact if the document is not mapped to a model
         data = {}
 
@@ -209,7 +208,12 @@ class Document(object):
             # No save method has been provided, lets map the fields one to one.
             data[field.name] = getattr(self, field.name)
 
-        self._model_manager.save(self._meta.identifier, **data)
+        return data
+
+    def save(self):
+        """Save the document in a django model backend."""
+        self._model_manager.save(self._meta.identifier,
+                **self._get_document_state())
 
     def fetch(self):
         """Fetch the model from the backend to create the representation of
@@ -248,10 +252,8 @@ class Document(object):
 
     def delete(self):
         """Delete a model instance associated with this document."""
-        obj = self._meta.model.objects.get(id=self.id)
-
-        # delete the model
-        obj.delete()
+        self._model_manager.delete(self._meta.identifier,
+                **self._get_document_state())
 
     def uri(self):
         """Return the absolute uri for this resource.

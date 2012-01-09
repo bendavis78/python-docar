@@ -19,7 +19,7 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         manager = ModelManager('django')
         ok_(isinstance(manager, DjangoModelManager))
 
-    def it_can_fetch_and_save_to_the_specific_model_manager(self):
+    def it_can_fetch_save_and_delete_to_the_specific_model_manager(self):
         with patch('docar.models.DjangoModelManager') as mock:
             mock_manager = Mock()
             mock_manager = mock.return_value
@@ -28,8 +28,10 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
             ok_(isinstance(manager, Mock))
             manager.fetch()
             manager.save()
+            manager.delete()
             eq_(True, mock_manager.fetch.called)
             eq_(True, mock_manager.save.called)
+            eq_(True, mock_manager.delete.called)
 
     def it_can_fetch_data_from_the_underlying_model(self):
         DjangoModel = Mock(name="DjangoModel")
@@ -62,3 +64,21 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         # the manager.save() method doesn't return on success
         manager.save(['id'], id=1)
         eq_([('objects.get', {'id': 1})], DjangoModel.method_calls)
+
+    def it_can_delete_the_underlying_model_instance(self):
+        DjangoModel = Mock(name="DjangoModel")
+        mock_model = Mock()
+        DjangoModel.objects.get.return_value = mock_model
+
+        manager = ModelManager('django')
+        # The manager needs to know which model it connects to
+        # This is normally done when the Document is created.
+        manager._model = DjangoModel
+
+        # make sure we are working with correct expectations
+        eq_(DjangoModelManager, type(manager))
+
+        manager.delete(['id'], id=1)
+
+        eq_([('objects.get', {'id': 1})], DjangoModel.method_calls)
+        eq_([('delete',)], mock_model.method_calls)

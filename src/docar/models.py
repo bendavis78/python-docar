@@ -43,5 +43,19 @@ class DjangoModelManager(object):
 
         instance.save()
 
+    def delete(self, identifier, *args, **kwargs):
+        select_dict = {}
+        for elem in identifier:
+            select_dict[elem] = kwargs[elem]
+
+        try:
+            # First try to retrieve the existing model if it exists
+            instance = self._model.objects.get(**select_dict)
+        except self._model.DoesNotExist:
+            # In case the model does not exist, we do nothing
+            return
+
+        instance.delete()
+
     def uri(self):
         return self.instance.get_absolute_url()
