@@ -14,6 +14,7 @@ from docar.exceptions import ModelDoesNotExist
 
 from app import Article, ArticleModel
 from app import Editor, EditorModel
+from app import TagModel
 
 
 BASKET = {
@@ -402,11 +403,28 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
         EditorModel.objects.get.return_value = mock_editor
         EditorModel.reset_mock()
 
+        tag1 = Mock()
+        tag1.slug = "tag1"
+        tag1.get_absolute_url.return_value = "tag1_location"
+        tag2 = Mock()
+        tag2.slug = "tag2"
+        tag2.get_absolute_url.return_value = "tag2_location"
+
+        tagcloud = [tag2, tag1]
+        tag_list = [tag2, tag1]
+
+        def tag_side_effect(*args, **kwargs):
+            return tag_list.pop()
+
         mock_article = Mock()
         mock_article.id = 1
         mock_article.name = "Headline"
         mock_article.get_absolute_url.return_value = "link"
         mock_article.editor = mock_editor
+
+        mock_article.tags.all.return_value = tagcloud
+
+        TagModel.objects.get.side_effect = tag_side_effect
 
         ArticleModel.objects.get.return_value = mock_article
 
@@ -417,7 +435,18 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
                     'rel': 'related',
                     'href': 'http://localhost/editor/1/'
                     },
-                #'tags': []
+                'tags': [
+                    {
+                        "slug": "tag1",
+                        "rel": "item",
+                        "href": "tag1_location"
+                        },
+                    {
+                        "slug": "tag2",
+                        "rel": "item",
+                        "href": "tag2_location"
+                        },
+                    ],
                 'link': {
                     'rel': 'self',
                     'href': mock_article.get_absolute_url()

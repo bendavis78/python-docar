@@ -4,7 +4,7 @@ import copy
 
 from bisect import bisect
 
-from .fields import Field, ForeignDocument, NOT_PROVIDED
+from .fields import Field, ForeignDocument, CollectionField, NOT_PROVIDED
 from .models import ModelManager
 #AmbigiousModelMapping
 
@@ -180,6 +180,9 @@ class Document(object):
                 related[field.name] = {
                         'rel': 'related',
                         'href': elem.uri()}
+            elif isinstance(field, CollectionField):
+                collection = self._model_manager._get_collection(field)
+                data[field.name] = collection.to_attributes()
             else:
                 data[field.name] = getattr(self, field.name)
         # update the data dict with the related fields
@@ -278,5 +281,4 @@ class Document(object):
             This method should always return the absolute URI as a string.
 
         """
-        #FIXME: This is django centric
         return self._model_manager.uri()

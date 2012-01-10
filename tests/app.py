@@ -42,7 +42,7 @@ class TagCloud(Collection):
 class Article(Document):
     id = fields.NumberField()
     name = fields.StringField()
-    #tags = fields.CollectionField(TagCloud)
+    tags = fields.CollectionField(TagCloud)
     editor = fields.ForeignDocument(Editor)
     #published = fields.ChoiceField(choices=PUBLISH_CHOICES)
 

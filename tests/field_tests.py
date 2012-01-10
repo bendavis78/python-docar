@@ -70,7 +70,10 @@ class when_a_foreign_key_field_gets_instantiated(unittest.TestCase):
 
 class when_a_collection_field_gets_instantiated(unittest.TestCase):
     def setUp(self):
-        self.collection_field = fields.CollectionField()
+        self.collection_field = fields.CollectionField("Collection")
 
     def it_defaults_to_NOT_PROVIDED(self):
         eq_(fields.NOT_PROVIDED, self.collection_field.default)
+
+    def it_sets_the_collection_as_an_attribute(self):
+        eq_("Collection", self.collection_field.Collection)

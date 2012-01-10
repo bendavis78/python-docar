@@ -25,6 +25,22 @@ class DjangoModelManager(object):
         self.instance = instance
         return instance
 
+    def _get_collection(self, field):
+        # FIXME: Tis relies on the fact that fetch has been called already
+        instance = self.instance
+
+        # create a new collection first
+        collection = field.Collection()
+
+        # create a document for each item in the m2m relation
+        relation = getattr(instance, field.name)
+        for item in relation.all():
+            doc = collection.document()
+            for elem in doc._meta.identifier:
+                setattr(doc, elem, getattr(item, elem))
+            collection.add(doc)
+        return collection
+
     def save(self, identifier, *args, **kwargs):
         select_dict = {}
         for elem in identifier:
