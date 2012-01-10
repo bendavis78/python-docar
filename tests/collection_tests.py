@@ -101,9 +101,6 @@ class when_a_collection_gets_instantiated(unittest.TestCase):
 
         EditorModel.objects.get.return_value = mock_editor
 
-        editor_dict = {'rel': 'related',
-                'href': 'http://localhost/editor/1/'}
-
         MockModel = Mock()
 
         class MockDoc(Document):
@@ -140,10 +137,8 @@ class when_a_collection_gets_instantiated(unittest.TestCase):
         newspaper = NewsPaper([doc1, doc2])
 
         expected = [
-                {'id': 1, 'name': 'Headline', 'editor': editor_dict, "link": {
-                    "rel": "self", "href": "link"}},
-                {'id': 2, 'name': 'Headline', 'editor': editor_dict, "link": {
-                    "rel": "self", "href": "link"}},
+                {"rel": "item", "href": "link", "id": 1},
+                {"rel": "item", "href": "link", "id": 2},
                 ]
 
         eq_(expected, json.loads(newspaper.to_json()))

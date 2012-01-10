@@ -49,8 +49,12 @@ class Collection(object):
     def to_attributes(self):
         data = []
         for document in self.collection_set:
+            item = {"rel": "item"}
             document.fetch()
-            data.append(document.to_attributes())
+            item["href"] = document.uri()
+            for elem in document._meta.identifier:
+                item[elem] = getattr(document, elem)
+            data.append(item)
 
         return data
 
