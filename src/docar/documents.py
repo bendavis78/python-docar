@@ -111,7 +111,10 @@ class DocumentBase(type):
 
         # create the fields on the instance document
         for field in new_class._meta.local_fields:
-            if field.default == NOT_PROVIDED:
+            if isinstance(field, CollectionField):
+                collection = field.Collection()
+                setattr(new_class, field.name, collection)
+            elif field.default == NOT_PROVIDED:
                 setattr(new_class, field.name, None)
             else:
                 setattr(new_class, field.name, field.default)

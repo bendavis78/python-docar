@@ -168,3 +168,53 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         ]}
 
         eq_(expected, doc.to_attributes())
+
+    def it_saves_collections_as_m2m_relations(self):
+        # prepare the app structure
+        Doc1Model = Mock(name="doc1_model")
+
+        class Doc1(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = Doc1Model
+
+        class Doc1Col(Collection):
+            document = Doc1
+
+        Doc2Model = Mock(name="doc2_model")
+
+        class Doc2(Document):
+            id = fields.NumberField()
+            col = fields.CollectionField(Doc1Col)
+
+            class Meta:
+                model = Doc2Model
+
+        request = {
+                "id": 1,
+                "col": [
+                    {"id": 1},
+                    {"id": 2}
+                    ]
+                }
+
+        # now mock the underlying model store
+        mock_doc1 = Mock(name="mock_doc1_model")
+        mock_doc2_1 = Mock(name="mock_doc2_1")
+        mock_doc2_2 = Mock(name="mock_doc2_2")
+
+        Doc1Model.objects.get_or_create.return_value = mock_doc1
+
+        collection_model = [mock_doc2_2, mock_doc2_1]
+
+        def se(*args, **kwargs):
+            return collection_model.pop()
+
+        Doc2Model.objects.get_or_create.side_effect = se
+
+        doc = Doc1(request)
+        doc.save()
+
+        eq_(True, Doc1Model.objects.get_or_create.called)
+        eq_(True, Doc2Model.objects.get_or_create.called)

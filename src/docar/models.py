@@ -51,6 +51,8 @@ class DjangoModelManager(object):
         # First try to retrieve the existing model if it exists
         instance = self._model.objects.get_or_create(**select_dict)
 
+        # instance can be used to set the m2m relations
+
     def delete(self, identifier, *args, **kwargs):
         select_dict = {}
         for elem in identifier:
