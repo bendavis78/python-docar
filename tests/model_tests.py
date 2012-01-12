@@ -186,6 +186,9 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
 
         class Doc2(Document):
             id = fields.NumberField()
+            # The bool field tests an edge case where boolean fields with a
+            # default value of False are ignored unfortunately
+            bool = fields.BooleanField(default=False)
             col = fields.CollectionField(Doc1Col)
 
             class Meta:
@@ -222,3 +225,5 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
 
         eq_(True, mock_doc2.col.get_or_create.called)
         eq_(True, Doc2Model.objects.get_or_create.called)
+        Doc2Model.objects.get_or_create.assert_called_once_with(id=1,
+                bool=False)

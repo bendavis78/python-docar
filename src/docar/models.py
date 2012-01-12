@@ -55,8 +55,10 @@ class DjangoModelManager(object):
                 m2m_relations.append((field, getattr(document, field.name)))
                 # we deal with collections later
                 break
-            # update the dict with the value from the document state
-            select_dict[field.name] = doc_state[field.name]
+            # Add the value to the select_dict only if its not None
+            if getattr(document, field.name) or field.default == False:
+                # update the dict with the value from the document state
+                select_dict[field.name] = doc_state[field.name]
 
         # First try to retrieve the existing model if it exists
         instance = self._model.objects.get_or_create(**select_dict)
