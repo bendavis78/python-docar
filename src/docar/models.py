@@ -46,6 +46,7 @@ class DjangoModelManager(object):
         for elem in identifier:
             select_dict[elem] = kwargs[elem]
 
+        #FIXME: Use get_or_create() manager method
         try:
             # First try to retrieve the existing model if it exists
             instance = self._model.objects.get(**select_dict)

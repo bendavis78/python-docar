@@ -1,10 +1,9 @@
 import json
 import types
-import copy
 
 from bisect import bisect
 
-from .fields import Field, ForeignDocument, CollectionField, NOT_PROVIDED
+from .fields import ForeignDocument, CollectionField, NOT_PROVIDED
 from .models import ModelManager
 #AmbigiousModelMapping
 
@@ -34,6 +33,7 @@ class Options(object):
         self.excludes = []
         self.local_fields = []
         self.related_fields = []
+        self.collection_fields = []
 
         self.meta = meta
 
@@ -43,7 +43,12 @@ class Options(object):
 
     def add_related_field(self, field):
         """Insert a related field into the documents fields."""
-        self.related_fields.insert(bisect(self.local_fields, field), field)
+        self.related_fields.insert(bisect(self.related_fields, field), field)
+
+    def add_collection_field(self, field):
+        """Insert a collection field into the documents fields."""
+        self.collection_fields.insert(bisect(self.collection_fields, field),
+                field)
 
     def contribute_to_class(self, cls, name):
         # This is bluntly stolen from the django orm
@@ -90,26 +95,26 @@ class DocumentBase(type):
 
         #FIXME: Not sure if I need fields and base_fields
         # populate the fields list
-        fields = [
-                (field_name, attrs.pop(field_name))
-                for field_name, obj
-                in attrs.items() if isinstance(obj, Field)
-            ]
+        #fields = [
+        #        (field_name, attrs.pop(field_name))
+        #        for field_name, obj
+        #        in attrs.items() if isinstance(obj, Field)
+        #    ]
 
         # add the fields for each base class
-        for base in bases[::-1]:
-            if hasattr(base, 'base_fields'):
-                fields = base.base_fields.items() + fields
+        #for base in bases[::-1]:
+        #    if hasattr(base, 'base_fields'):
+        #        fields = base.base_fields.items() + fields
 
         #attrs['base_fields'] = dict(fields)
-        setattr(new_class, 'base_fields', dict(fields))
+        #setattr(new_class, 'base_fields', dict(fields))
 
         # create the fields on the instance document
-        for field_name, val in new_class.base_fields.items():
-            if val.default == NOT_PROVIDED:
-                setattr(new_class, field_name, None)
+        for field in new_class._meta.local_fields:
+            if field.default == NOT_PROVIDED:
+                setattr(new_class, field.name, None)
             else:
-                setattr(new_class, field_name, val.default)
+                setattr(new_class, field.name, field.default)
 
         # create the related fields on the instance document
         for field in new_class._meta.related_fields:
@@ -142,7 +147,7 @@ class Document(object):
 
         """
         #FIXME: Do I actualy need this attribute?
-        self.fields = copy.deepcopy(self.base_fields)
+        #self.fields = copy.deepcopy(self.base_fields)
 
         # Check on the input
         if (not data or
@@ -173,7 +178,7 @@ class Document(object):
             if field.optional and not getattr(self, field.name):
                 # The field is optional and not set, ignore it
                 continue
-            if isinstance(field, ForeignDocument):
+            elif isinstance(field, ForeignDocument):
                 #FIXME: determine not bound or optional foreign documents
                 # fill the related dict
                 elem = getattr(self, field.name)
@@ -220,6 +225,7 @@ class Document(object):
 
     def update(self, data):
         # FIXME: Handle ForeignDocument relations
+        self.fetch()
         # First update the own document state with the new values
         for k, v in data.iteritems():
             setattr(self, k, v)

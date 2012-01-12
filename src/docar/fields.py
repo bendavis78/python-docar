@@ -61,6 +61,13 @@ class CollectionField(Field):
         self.Collection = args[0]
         super(CollectionField, self).__init__(**kwargs)
 
+    def contribute_to_class(self, cls, name):
+        """Contribute ``self`` to ``cls``. Used to set several field specific
+        attributes. Called during class creation in ``DocumentBase``."""
+        super(CollectionField, self).contribute_to_class(cls, name)
+
+        cls._meta.add_collection_field(self)
+
 
 class ObjectField(Field):
     """An unordered list of zero or more key/value pairs referencing one

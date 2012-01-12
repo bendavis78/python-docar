@@ -7,10 +7,9 @@ from mock import Mock
 
 from docar import documents
 from docar import fields
-from docar import Document
+from docar import Document, Collection
 from docar.models import DjangoModelManager
 from docar.exceptions import ModelDoesNotExist
-#from docar.exceptions import AmbigiousModelMapping
 
 from app import Article, ArticleModel
 from app import Editor, EditorModel
@@ -74,6 +73,33 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_(types.ListType, type(self.article._meta.local_fields))
         eq_(fields.NumberField, type(self.article._meta.local_fields[0]))
         eq_(fields.StringField, type(self.article._meta.local_fields[1]))
+
+    def it_stores_seperates_lists_for_the_different_types_of_fields(self):
+        """The document _meta attribute stores different lists for the
+        different types of fields. So that later when saving to the model it
+        can treat them differently."""
+        Model = Mock()
+        Col = Mock(name="collection", spec=Collection)
+        Relation = Mock(name="relation", spec="Document")
+
+        class Doc(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+            foreign = fields.ForeignDocument(Relation)
+            collection = fields.CollectionField(Col)
+
+            class Meta:
+                model = Model
+
+        d = Doc()
+
+        eq_(types.ListType, type(d._meta.local_fields))
+        eq_(types.ListType, type(d._meta.related_fields))
+        eq_(types.ListType, type(d._meta.collection_fields))
+
+        eq_(1, len(d._meta.related_fields))
+        eq_(1, len(d._meta.collection_fields))
+        eq_(4, len(d._meta.local_fields))
 
     def it_has_an_attribute_for_each_field(self):
         eq_(True, hasattr(self.article, 'name'))
@@ -252,10 +278,10 @@ class when_a_document_inherits_from_another_document(unittest.TestCase):
 
     def it_inherits_all_fields(self):
         # that should be the total amount of fields for the inherited document
-        eq_(3, len(self.basket.fields))
-        eq_(True, 'is_present' in self.basket.fields)
-        eq_(True, 'is_rotten' in self.basket.fields)
-        eq_(True, 'name' in self.basket.fields)
+        eq_(3, len(self.basket._meta.local_fields))
+        #eq_(True, 'is_present' in self.basket.fields)
+        #eq_(True, 'is_rotten' in self.basket.fields)
+        #eq_(True, 'name' in self.basket.fields)
 
 
 class when_a_document_is_bound(unittest.TestCase):
@@ -461,6 +487,41 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
                 "last_name": "Buschek"}
             )],
                 EditorModel.method_calls)
+
+    def it_can_map_the_relation_on_model_level_upon_creation(self):
+        DjangoModel = Mock(name='DjangoModel')
+
+        mock_model = Mock()
+        mock_model.id = 34
+        DjangoModel.objects.get.return_value = mock_model
+
+        class Doc(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = DjangoModel
+
+        OtherModel = Mock(name='OtherModel')
+        OtherModel.DoesNotExist = Exception
+        OtherModel.objects.get.side_effect = OtherModel.DoesNotExist
+
+        class Other(Document):
+            id = fields.NumberField()
+            doc = fields.ForeignDocument(Doc)
+
+            class Meta:
+                model = OtherModel
+
+        message = {
+                "id": 1,
+                "doc": 34
+                }
+
+        doc = Other(message)
+        doc.save()
+
+        eq_(True, DjangoModel.objects.get.called)
+        DjangoModel.objects.get.assert_called_once_with(id=34)
 
 
 class when_a_document_field_cant_be_mapped_to_a_model(unittest.TestCase):
