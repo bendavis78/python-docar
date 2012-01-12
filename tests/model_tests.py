@@ -62,9 +62,17 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         # make sure we are working with correct expectations
         eq_(DjangoModelManager, type(manager))
 
+        doc = Mock(name="mock_document")
+        field = Mock(name="mock_field")
+        field.name = "id"
+        doc.id = 1
+        doc._meta.identifier = ["id"]
+        doc._get_document_state.return_value = {"id": 1}
+        doc._meta.local_fields = [field]
+
         # the manager.save() method doesn't return on success
-        manager.save(['id'], id=1)
-        eq_([('objects.get', {'id': 1})], DjangoModel.method_calls)
+        manager.save(doc)
+        eq_([('objects.get_or_create', {'id': 1})], DjangoModel.method_calls)
 
     def it_can_delete_the_underlying_model_instance(self):
         DjangoModel = Mock(name="DjangoModel")

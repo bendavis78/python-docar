@@ -41,24 +41,15 @@ class DjangoModelManager(object):
             collection.add(doc)
         return collection
 
-    def save(self, identifier, *args, **kwargs):
+    def save(self, document):
         select_dict = {}
-        for elem in identifier:
-            select_dict[elem] = kwargs[elem]
-
-        #FIXME: Use get_or_create() manager method
-        try:
-            # First try to retrieve the existing model if it exists
-            instance = self._model.objects.get(**select_dict)
-        except self._model.DoesNotExist:
-            # if not we are creating a new model
-            instance = self._model(**kwargs)
 
         #FIXME: Whats with foreign relations?
-        for elem, value in kwargs.iteritems():
-            setattr(instance, elem, value)
+        for elem, value in document._get_document_state().iteritems():
+            select_dict[elem] = value
 
-        instance.save()
+        # First try to retrieve the existing model if it exists
+        instance = self._model.objects.get_or_create(**select_dict)
 
     def delete(self, identifier, *args, **kwargs):
         select_dict = {}

@@ -220,8 +220,7 @@ class Document(object):
 
     def save(self):
         """Save the document in a django model backend."""
-        self._model_manager.save(self._meta.identifier,
-                **self._get_document_state())
+        self._model_manager.save(self)
 
     def update(self, data):
         # FIXME: Handle ForeignDocument relations
