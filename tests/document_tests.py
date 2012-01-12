@@ -2,7 +2,7 @@ import unittest
 import types
 import json
 
-from nose.tools import eq_, assert_raises
+from nose.tools import eq_, assert_raises, ok_
 from nose.exc import SkipTest
 from mock import Mock
 
@@ -519,6 +519,59 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
 
         eq_(True, DjangoModel.objects.get.called)
         DjangoModel.objects.get.assert_called_once_with(id=34)
+
+
+class when_a_document_contains_a_collection_field(unittest.TestCase):
+    def it_sets_the_collection_as_attribute_for_the_field(self):
+        MockDoc = Mock()
+        MockModel = Mock()
+
+        class Col(Collection):
+            document = MockDoc
+
+        class Doc(Document):
+            id = fields.NumberField()
+            col = fields.CollectionField(Col)
+
+            class Meta:
+                model = MockModel
+
+        doc = Doc()
+
+        ok_(isinstance(doc.col, Col))
+
+    def it_creates_a_bound_collection_upon_instantiation_of_the_document(self):
+        MockModel = Mock()
+        ColMockModel = Mock()
+
+        class ColDoc(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = ColMockModel
+
+        class Col(Collection):
+            document = ColDoc
+
+        class Doc(Document):
+            id = fields.NumberField()
+            col = fields.CollectionField(Col)
+
+            class Meta:
+                model = MockModel
+
+        request = {
+                "id": 1,
+                "col": [
+                    {"id": 2},
+                    {"id": 3}
+                    ]
+                }
+
+        doc = Doc(request)
+
+        ok_(isinstance(doc.col, Col))
+        eq_(2, len(doc.col.collection_set))
 
 
 class when_a_document_field_cant_be_mapped_to_a_model(unittest.TestCase):

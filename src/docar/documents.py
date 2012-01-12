@@ -166,6 +166,16 @@ class Document(object):
                     type(val) == types.BooleanType or \
                     type(val) == types.IntType:
                 setattr(self, field_name, val)
+            elif type(val) == types.ListType:
+                # Create a collection containing the list items
+                collection = getattr(self, field_name)
+                # for each member of the list, create a document, and add it to
+                # the collection
+                for item in val:
+                    doc = collection.document(item)
+                    collection.add(doc)
+                # set the collection as document attribute
+                setattr(self, field_name, collection)
 
     def to_json(self):
         """Render this document as json."""

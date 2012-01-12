@@ -1,9 +1,8 @@
 import unittest
 
-from nose.tools import eq_, ok_
-from mock import Mock
+from nose.tools import eq_
 
-from docar import fields, Document, Collection
+from docar import fields, Document
 
 
 class when_a_boolean_field_gets_instantiated(unittest.TestCase):
@@ -78,23 +77,3 @@ class when_a_collection_field_gets_instantiated(unittest.TestCase):
 
     def it_sets_the_collection_as_an_attribute(self):
         eq_("Collection", self.collection_field.Collection)
-
-
-class when_a_document_gets_instantiated(unittest.TestCase):
-    def it_sets_the_collection_as_attribute_for_the_field(self):
-        MockDoc = Mock()
-        MockModel = Mock()
-
-        class Col(Collection):
-            document = MockDoc
-
-        class Doc(Document):
-            id = fields.NumberField()
-            col = fields.CollectionField(Col)
-
-            class Meta:
-                model = MockModel
-
-        doc = Doc()
-
-        ok_(isinstance(doc.col, Col))

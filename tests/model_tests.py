@@ -213,7 +213,7 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
 
         Doc2Model.objects.get_or_create.side_effect = se
 
-        doc = Doc1(request)
+        doc = Doc2(request)
         doc.save()
 
         eq_(True, Doc1Model.objects.get_or_create.called)
