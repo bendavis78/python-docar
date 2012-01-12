@@ -62,8 +62,8 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         # make sure we are working with correct expectations
         eq_(DjangoModelManager, type(manager))
 
-        doc = Mock(name="mock_document")
-        field = Mock(name="mock_field")
+        doc = Mock(name="mock_document", spec=Document)
+        field = fields.NumberField()
         field.name = "id"
         doc.id = 1
         doc._meta.identifier = ["id"]
@@ -200,21 +200,25 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
                 }
 
         # now mock the underlying model store
-        mock_doc1 = Mock(name="mock_doc1_model")
-        mock_doc2_1 = Mock(name="mock_doc2_1")
-        mock_doc2_2 = Mock(name="mock_doc2_2")
+        mock_doc2 = Mock(name="mock_doc2_model")
+        mock_doc1_1 = Mock(name="mock_doc1_1")
+        mock_doc1_2 = Mock(name="mock_doc1_2")
 
-        Doc1Model.objects.get_or_create.return_value = mock_doc1
+        Doc2Model.objects.get_or_create.return_value = mock_doc2
 
-        collection_model = [mock_doc2_2, mock_doc2_1]
+        collection_model = [mock_doc1_2, mock_doc1_1]
 
         def se(*args, **kwargs):
             return collection_model.pop()
 
-        Doc2Model.objects.get_or_create.side_effect = se
+        mock_doc2.col = Mock()
+        mock_doc2.col.get_or_create.side_effect = se
 
         doc = Doc2(request)
+
+        eq_(2, len(doc.col.collection_set))
+
         doc.save()
 
-        eq_(True, Doc1Model.objects.get_or_create.called)
+        eq_(True, mock_doc2.col.get_or_create.called)
         eq_(True, Doc2Model.objects.get_or_create.called)

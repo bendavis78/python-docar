@@ -5,7 +5,6 @@ from bisect import bisect
 
 from .fields import ForeignDocument, CollectionField, NOT_PROVIDED
 from .models import ModelManager
-#AmbigiousModelMapping
 
 
 DEFAULT_NAMES = ('identifier', 'model', 'excludes')
