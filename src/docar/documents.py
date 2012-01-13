@@ -292,8 +292,9 @@ class Document(object):
 
     def delete(self):
         """Delete a model instance associated with this document."""
-        self._model_manager.delete(self._meta.identifier,
-                **self._save_state())
+        #self._model_manager.delete(self._meta.identifier,
+        #        **self._save_state())
+        self._model_manager.delete(self)
 
     def uri(self):
         """Return the absolute uri for this resource.

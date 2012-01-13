@@ -150,7 +150,8 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         mock_editor.last_name = "Buschek"
         mock_editor.age = 31
 
-        EditorModel.objects.get.return_value = mock_editor
+        mock_editor._model_manager = Mock()
+        mock_editor._model_manager.fetch.return_value = mock_editor
 
         # the editor should fetch the age correctly
         editor.fetch()
@@ -214,35 +215,39 @@ class when_a_document_gets_instantiated(unittest.TestCase):
     def it_can_fetch_its_state_from_the_model_backend(self):
         doc1 = Article({'id': 1})
 
+        # mock the model manager return
+        mock_doc1 = Mock()
+        mock_doc1.id = 1
+        doc1._model_manager = Mock()
+        doc1._model_manager.fetch.return_value = mock_doc1
+
         # before we actually fetch the document, name should be empty
         eq_(None, doc1.name)
 
-        # we mock the model object
-        mock_model = ArticleModel.return_value
-
-        ArticleModel.objects.get.return_value = mock_model
-        mock_model.id = 1
-        mock_model.name = "hello"
+        # we change the name attribute of the model instance
+        mock_doc1.name = "hello"
 
         # this should all work out now
         doc1.fetch()
         eq_("hello", doc1.name)
 
         # mock the manager object, It should throw an exception
-        ArticleModel.objects.get.side_effect = ArticleModel.DoesNotExist
+        doc1._model_manager.fetch.side_effect = ModelDoesNotExist
 
         assert_raises(ModelDoesNotExist, doc1.fetch)
 
     def it_can_delete_its_model_backend(self):
         doc1 = Article({'id': 1})
 
-        # we mock the model object
-        mock_model = Mock()
-        ArticleModel.objects.get.return_value = mock_model
+        # mock the model manager return
+        mock_doc1 = Mock()
+        mock_doc1.id = 1
+        doc1._model_manager = Mock()
+        doc1._model_manager.fetch.return_value = mock_doc1
 
         # delete the model
         doc1.delete()
-        eq_([('delete',)], mock_model.method_calls)
+        eq_([('delete', (doc1,))], doc1._model_manager.method_calls)
 
     def it_can_link_to_other_documents(self):
         #editor = Editor({'first_name': 'Christo', 'last_name': 'Buschek'})

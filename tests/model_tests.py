@@ -87,7 +87,11 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         # make sure we are working with correct expectations
         eq_(DjangoModelManager, type(manager))
 
-        manager.delete(['id'], id=1)
+        # mock the actual document
+        doc = Mock(name="MockDoc", spec=Document)
+        doc._identifier_state.return_value = {"id": 1}
+
+        manager.delete(doc)
 
         eq_([('objects.get', {'id': 1})], DjangoModel.method_calls)
         eq_([('delete',)], mock_model.method_calls)

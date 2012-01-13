@@ -84,15 +84,13 @@ class DjangoModelManager(object):
 
         self.instance = instance
 
-    def delete(self, identifier, *args, **kwargs):
-        select_dict = {}
-        for elem in identifier:
-            select_dict[elem] = kwargs[elem]
+    def delete(self, document):
+        select_dict = document._identifier_state()
 
         try:
             # First try to retrieve the existing model if it exists
-            instance = self._model.objects.get(**select_dict)
-        except self._model.DoesNotExist:
+            instance = self.fetch(**select_dict)
+        except ModelDoesNotExist:
             # In case the model does not exist, we do nothing
             return
 
