@@ -168,6 +168,22 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_('is_rotten', self.basket._meta.local_fields[0].name)
         eq_('name', self.basket._meta.local_fields[1].name)
 
+    def it_can_extract_the_identifier_state_from_itself(self):
+        Model = Mock()
+
+        class Doc(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+
+            class Meta:
+                model = Model
+
+        expected = {"id": 1}
+
+        doc = Doc({"id": 1, "name": "name"})
+
+        eq_(expected, doc._identifier_state())
+
     def it_can_fetch_its_state_from_the_model_backend(self):
         doc1 = Article({'id': 1})
 

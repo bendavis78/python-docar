@@ -170,6 +170,32 @@ class Document(object):
                 doc = Document[0](val)
                 setattr(self, field_name, doc)
 
+    def _identifier_state(self):
+        data = {}
+        for elem in self._meta.identifier:
+            data[elem] = getattr(self, elem)
+
+        return data
+
+    def _save_state(self):
+        #FIXME: Handle the fact if the document is not mapped to a model
+        data = {}
+
+        # populate the data_dict with the documents state
+        for field in self._meta.local_fields:
+            if hasattr(self, "save_%s_field" % field.name):
+                # We have a save method for this field
+                save_field = getattr(self, "save_%s_field" % field.name)
+                data[field.name] = save_field()
+
+                # skip to the next iteration
+                continue
+
+            # No save method has been provided, lets map the fields one to one.
+            data[field.name] = getattr(self, field.name)
+
+        return data
+
     def to_json(self):
         """Render this document as json."""
         return json.dumps(self.to_attributes())
@@ -203,25 +229,6 @@ class Document(object):
         data['link'] = {
                 'rel': 'self',
                 'href': self.uri()}
-        return data
-
-    def _get_document_state(self):
-        #FIXME: Handle the fact if the document is not mapped to a model
-        data = {}
-
-        # populate the data_dict with the documents state
-        for field in self._meta.local_fields:
-            if hasattr(self, "save_%s_field" % field.name):
-                # We have a save method for this field
-                save_field = getattr(self, "save_%s_field" % field.name)
-                data[field.name] = save_field()
-
-                # skip to the next iteration
-                continue
-
-            # No save method has been provided, lets map the fields one to one.
-            data[field.name] = getattr(self, field.name)
-
         return data
 
     def save(self):
@@ -276,7 +283,7 @@ class Document(object):
     def delete(self):
         """Delete a model instance associated with this document."""
         self._model_manager.delete(self._meta.identifier,
-                **self._get_document_state())
+                **self._save_state())
 
     def uri(self):
         """Return the absolute uri for this resource.

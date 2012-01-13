@@ -67,7 +67,7 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         field.name = "id"
         doc.id = 1
         doc._meta.identifier = ["id"]
-        doc._get_document_state.return_value = {"id": 1}
+        doc._save_state.return_value = {"id": 1}
         doc._meta.local_fields = [field]
 
         # the manager.save() method doesn't return on success
@@ -267,3 +267,22 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         eq_(True, Doc1Model.objects.get.called)
 
         # Now save a non existing model
+        mock_doc1.reset_mock()
+        mock_doc2.reset_mock()
+        Doc1Model.DoesNotExist = Exception
+        Doc1Model.objects.get.side_effect = Doc1Model.DoesNotExist
+        Doc1Model.objects.get_or_create.return_value = (mock_doc1, True)
+        Doc2Model.objects.get_or_create.return_value = (mock_doc2, True)
+
+        request = {
+                "id": 1,
+                "doc1": {
+                    "id": 1
+                    }
+                }
+
+        doc = Doc2(request)
+        doc.save()
+
+        ok_(isinstance(doc.doc1, Document))
+        eq_(True, Doc1Model.objects.get.called)

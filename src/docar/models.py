@@ -46,7 +46,7 @@ class DjangoModelManager(object):
         m2m_relations = []
 
         # we run this method to make sure we catch all save_FIELD_field methods
-        doc_state = document._get_document_state()
+        doc_state = document._save_state()
 
         for field in document._meta.local_fields:
             if hasattr(field, 'Collection'):
@@ -57,7 +57,7 @@ class DjangoModelManager(object):
                 # a foreign document means we have to retrieve it from the
                 # model
                 doc = getattr(document, field.name)
-                state = doc._get_document_state()
+                state = doc._identifier_state()
                 try:
                     instance = doc._model_manager.fetch(**state)
                 except ModelDoesNotExist:
@@ -78,7 +78,9 @@ class DjangoModelManager(object):
         for item in m2m_relations:
             m2m = getattr(instance, item[0].name)
             for doc in item[1].collection_set:
-                m2m.get_or_create(**doc._get_document_state())
+                # FIXME: Replace get_or_create with a more fine grained control
+                # to be able to retrieve instances only with the identifier?
+                m2m.get_or_create(**doc._save_state())
 
         self.instance = instance
 
