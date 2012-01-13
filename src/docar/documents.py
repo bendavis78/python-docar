@@ -198,7 +198,7 @@ class Document(object):
 
     def to_json(self):
         """Render this document as json."""
-        return json.dumps(self.to_attributes())
+        return json.dumps(self._prepare_render())
 
     def to_attributes(self):
         """Render this document to a python dictionary."""
@@ -210,6 +210,12 @@ class Document(object):
             if field.optional and not getattr(self, field.name):
                 # The field is optional and not set, ignore it
                 continue
+            elif hasattr(self, "render_%s_field" % field.name):
+                # We have a render method for this field
+                render_field = getattr(self, "render_%s_field" % field.name)
+                data[field.name] = render_field()
+                # skip to the next iteration
+                continue
             elif isinstance(field, ForeignDocument):
                 #FIXME: determine not bound or optional foreign documents
                 # fill the related dict
@@ -219,7 +225,7 @@ class Document(object):
                         'href': elem.uri()}
             elif isinstance(field, CollectionField):
                 collection = self._model_manager._get_collection(field)
-                data[field.name] = collection.to_attributes()
+                data[field.name] = collection._prepare_render()
             else:
                 data[field.name] = getattr(self, field.name)
         # update the data dict with the related fields
@@ -230,6 +236,10 @@ class Document(object):
                 'rel': 'self',
                 'href': self.uri()}
         return data
+
+    def _prepare_render(self):
+        """Create a proper python dict that can be further rendered."""
+        return self.to_attributes()
 
     def save(self):
         """Save the document in a django model backend."""

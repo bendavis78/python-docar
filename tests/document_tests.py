@@ -184,6 +184,33 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
         eq_(expected, doc._identifier_state())
 
+    def it_can_provide_a_render_field_for_a_field(self):
+        Model = Mock()
+
+        class Doc(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+
+            class Meta:
+                model = Model
+
+            def render_name_field(self):
+                return "something"
+
+            def uri(self):
+                # specify this function, otherwise we have to make a more
+                # complicated mocked model
+                return "http://location"
+
+        expected = {"id": 1, "name": "something", "link":
+                {"rel": "self", "href": "http://location"}
+                }
+
+        doc = Doc({"id": 1, "name": "name"})
+
+        eq_("name", doc.name)
+        eq_(expected, doc._prepare_render())
+
     def it_can_fetch_its_state_from_the_model_backend(self):
         doc1 = Article({'id': 1})
 
@@ -311,7 +338,7 @@ class when_a_document_is_bound(unittest.TestCase):
         eq_(json.dumps(BASKET), self.basket.to_json())
 
     def it_can_be_rendered_to_a_python_dictionary(self):
-        eq_(BASKET, self.basket.to_attributes())
+        eq_(BASKET, self.basket._prepare_render())
 
     def it_can_collect_links(self):
         eq_('http://localhost/basket/1/', self.basket.uri())

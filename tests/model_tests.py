@@ -167,7 +167,7 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
             }
         ]}
 
-        eq_(expected, doc.to_attributes())
+        eq_(expected, doc._prepare_render())
 
     def it_saves_collections_as_m2m_relations(self):
         # prepare the app structure

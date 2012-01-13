@@ -46,7 +46,7 @@ class Collection(object):
             doc.fetch()
             self.add(doc)
 
-    def to_attributes(self):
+    def _prepare_render(self):
         data = []
         for document in self.collection_set:
             item = {"rel": "item"}
@@ -59,4 +59,4 @@ class Collection(object):
         return data
 
     def to_json(self):
-        return json.dumps(self.to_attributes())
+        return json.dumps(self._prepare_render())
