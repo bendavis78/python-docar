@@ -92,22 +92,6 @@ class DocumentBase(type):
             for field in base._meta.local_fields:
                 new_class.add_to_class(field.name, field)
 
-        #FIXME: Not sure if I need fields and base_fields
-        # populate the fields list
-        #fields = [
-        #        (field_name, attrs.pop(field_name))
-        #        for field_name, obj
-        #        in attrs.items() if isinstance(obj, Field)
-        #    ]
-
-        # add the fields for each base class
-        #for base in bases[::-1]:
-        #    if hasattr(base, 'base_fields'):
-        #        fields = base.base_fields.items() + fields
-
-        #attrs['base_fields'] = dict(fields)
-        #setattr(new_class, 'base_fields', dict(fields))
-
         # create the fields on the instance document
         for field in new_class._meta.local_fields:
             if isinstance(field, CollectionField):
@@ -119,6 +103,7 @@ class DocumentBase(type):
                 setattr(new_class, field.name, field.default)
 
         # create the related fields on the instance document
+        #FIXME: not sure if thats really needed
         for field in new_class._meta.related_fields:
             setattr(new_class, "%s_id" % field.name, None)
 
@@ -148,9 +133,6 @@ class Document(object):
         :type data: dict
 
         """
-        #FIXME: Do I actualy need this attribute?
-        #self.fields = copy.deepcopy(self.base_fields)
-
         # Check on the input
         if (not data or
                 type(data) is not types.DictType):
@@ -175,6 +157,18 @@ class Document(object):
                     collection.add(doc)
                 # set the collection as document attribute
                 setattr(self, field_name, collection)
+            elif type(val) == types.DictType:
+                # We got ourselve a foreign document
+                Document = [field.Document
+                        for field in self._meta.related_fields
+                        if field.name in field_name]
+                if not Document:
+                    # If we didn't find it in the related_fields list, its not
+                    # a foreign document, so we ignore this dict field
+                    continue
+                # create the appripriate document and set it as an attribute
+                doc = Document[0](val)
+                setattr(self, field_name, doc)
 
     def to_json(self):
         """Render this document as json."""

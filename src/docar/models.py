@@ -48,26 +48,39 @@ class DjangoModelManager(object):
         # we run this method to make sure we catch all save_FIELD_field methods
         doc_state = document._get_document_state()
 
-        #FIXME: Whats with foreign relations?
-        #for elem, value in document._get_document_state().iteritems():
         for field in document._meta.local_fields:
             if hasattr(field, 'Collection'):
                 m2m_relations.append((field, getattr(document, field.name)))
                 # we deal with collections later
                 break
+            elif hasattr(field, 'Document'):
+                # a foreign document means we have to retrieve it from the
+                # model
+                doc = getattr(document, field.name)
+                state = doc._get_document_state()
+                try:
+                    instance = doc._model_manager.fetch(**state)
+                except ModelDoesNotExist:
+                    #FIXME: make sure it doesn't throw an exception
+                    doc.save()
+                    instance = doc._model_manager.instance
+                select_dict[field.name] = instance
             # Add the value to the select_dict only if its not None
-            if getattr(document, field.name) or field.default == False:
+            elif getattr(document, field.name) or field.default == False:
                 # update the dict with the value from the document state
                 select_dict[field.name] = doc_state[field.name]
 
         # First try to retrieve the existing model if it exists
-        instance = self._model.objects.get_or_create(**select_dict)
+        instance, created = self._model.objects.get_or_create(**select_dict)
+        #instance.save()
 
         # instance can be used to set the m2m relations
         for item in m2m_relations:
             m2m = getattr(instance, item[0].name)
             for doc in item[1].collection_set:
                 m2m.get_or_create(**doc._get_document_state())
+
+        self.instance = instance
 
     def delete(self, identifier, *args, **kwargs):
         select_dict = {}

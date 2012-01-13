@@ -206,7 +206,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         #doc1 = Article({'id': 1, 'editor': editor})
         pass
 
-    def it_posseses_a_model_manager(self):
+    def it_creates_a_model_manager(self):
         doc1 = Article({'id': 1})
 
         eq_(True, hasattr(doc1, '_model_manager'))
@@ -326,7 +326,7 @@ class when_a_document_is_bound(unittest.TestCase):
         mock_model = DjangoModel.return_value
 
         # mock the manager object, It should throw an exception
-        DjangoModel.objects.get_or_create.return_value = mock_model
+        DjangoModel.objects.get_or_create.return_value = (mock_model, False)
 
         # The expectation is that this instance gets newly created
         instance = ModelDocument({'id': 23, 'name': 'hello world'})
@@ -400,7 +400,7 @@ class when_a_document_is_bound(unittest.TestCase):
         # create the mocked instance of the model
         mock_model = DjangoModel.return_value
         DjangoModel.DoesNotExist = Exception
-        DjangoModel.objects.get_or_create.return_value = mock_model
+        DjangoModel.objects.get_or_create.return_value = (mock_model, False)
 
         # The expectation is that this instance gets newly created
         instance = ModelDocument({'id': 24, 'name': 'hello universe'})
@@ -482,6 +482,38 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
                 "last_name": "Buschek"}
             )],
                 EditorModel.method_calls)
+
+    def it_sets_the_attribute_as_a_document(self):
+        DjangoModel = Mock(name='DjangoModel')
+
+        mock_model = Mock()
+        mock_model.id = 34
+        DjangoModel.objects.get.return_value = mock_model
+
+        class Doc(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = DjangoModel
+
+        OtherModel = Mock(name='OtherModel')
+        OtherModel.DoesNotExist = Exception
+        OtherModel.objects.get.side_effect = OtherModel.DoesNotExist
+
+        class Other(Document):
+            id = fields.NumberField()
+            doc = fields.ForeignDocument(Doc)
+
+            class Meta:
+                model = OtherModel
+
+        message = {
+                "id": 1,
+                "doc": {"id": 34}
+                }
+
+        doc = Other(message)
+        ok_(isinstance(doc.doc, Doc))
 
     def it_can_map_the_relation_on_model_level_upon_creation(self):
         #This needs more thinking before proceeding
@@ -595,7 +627,7 @@ class when_a_document_field_cant_be_mapped_to_a_model(unittest.TestCase):
         # create the mocked instance of the model
         mock_model = Mock()
         mock_model.id = 1
-        mock_model = DjangoModel.objects.get.return_value
+        DjangoModel.objects.get_or_create.return_value = (mock_model, False)
 
         # retrieve the document
         doc = ModelDocument({'id': 1})

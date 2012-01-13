@@ -52,7 +52,7 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
     def it_can_save_data_to_the_underlying_model(self):
         DjangoModel = Mock(name="DjangoModel")
         mock_model = Mock()
-        DjangoModel.objects.get.return_value = mock_model
+        DjangoModel.objects.get_or_create.return_value = (mock_model, False)
 
         manager = ModelManager('django')
         # The manager needs to know which model it connects to
@@ -207,9 +207,9 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         mock_doc1_1 = Mock(name="mock_doc1_1")
         mock_doc1_2 = Mock(name="mock_doc1_2")
 
-        Doc2Model.objects.get_or_create.return_value = mock_doc2
+        Doc2Model.objects.get_or_create.return_value = (mock_doc2, False)
 
-        collection_model = [mock_doc1_2, mock_doc1_1]
+        collection_model = [(mock_doc1_2,), (mock_doc1_1,)]
 
         def se(*args, **kwargs):
             return collection_model.pop()
@@ -227,3 +227,43 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         eq_(True, Doc2Model.objects.get_or_create.called)
         Doc2Model.objects.get_or_create.assert_called_once_with(id=1,
                 bool=False)
+
+    def it_supplies_the_foreign_model_instance_when_saving_a_foreign_key(self):
+        # prepare the app structure
+        Doc1Model = Mock(name="doc1_model")
+
+        class Doc1(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = Doc1Model
+
+        Doc2Model = Mock(name="doc2_model")
+
+        class Doc2(Document):
+            id = fields.NumberField()
+            doc1 = fields.ForeignDocument(Doc1)
+
+            class Meta:
+                model = Doc2Model
+
+        # First return an existing model instance
+        mock_doc1 = Mock()
+        mock_doc2 = Mock()
+        Doc1Model.objects.get.return_value = mock_doc1
+        Doc2Model.objects.get_or_create.return_value = (mock_doc2, True)
+
+        request = {
+                "id": 1,
+                "doc1": {
+                    "id": 1
+                    }
+                }
+
+        doc = Doc2(request)
+        doc.save()
+
+        ok_(isinstance(doc.doc1, Document))
+        eq_(True, Doc1Model.objects.get.called)
+
+        # Now save a non existing model
