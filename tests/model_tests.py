@@ -8,6 +8,16 @@ from docar import Document, Collection, fields
 
 
 class when_a_model_manager_gets_instantiated(unittest.TestCase):
+    def it_can_provide_a_link_using_the_django_model(self):
+        mock_model = Mock()
+        mock_model.get_absolute_url.return_value = "link"
+
+        manager = ModelManager('django')
+        manager.instance = mock_model
+
+        eq_("link", manager.uri())
+        eq_(True, mock_model.get_absolute_url.called)
+
     def it_takes_the_model_type_as_an_argument(self):
         manager = ModelManager('django')
         eq_('django', manager.model_type)

@@ -236,24 +236,6 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
         assert_raises(ModelDoesNotExist, doc1.fetch)
 
-    def it_can_delete_its_model_backend(self):
-        doc1 = Article({'id': 1})
-
-        # mock the model manager return
-        mock_doc1 = Mock()
-        mock_doc1.id = 1
-        doc1._model_manager = Mock()
-        doc1._model_manager.fetch.return_value = mock_doc1
-
-        # delete the model
-        doc1.delete()
-        eq_([('delete', (doc1,))], doc1._model_manager.method_calls)
-
-    def it_can_link_to_other_documents(self):
-        #editor = Editor({'first_name': 'Christo', 'last_name': 'Buschek'})
-        #doc1 = Article({'id': 1, 'editor': editor})
-        pass
-
     def it_creates_a_model_manager(self):
         doc1 = Article({'id': 1})
 
@@ -262,11 +244,6 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
     def it_doesnt_render_optional_fields_that_are_set_to_none(self):
         DocModel = Mock(name='DocModel')
-        mock_doc = Mock()
-        mock_doc.id = 1
-        mock_doc.name = None
-        mock_doc.get_absolute_url.return_value = "link"
-        DocModel.objects.get.return_value = mock_doc
 
         class Doc(Document):
             id = fields.NumberField()
@@ -275,10 +252,19 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             class Meta:
                 model = DocModel
 
+        mock_doc = Mock()
+        mock_doc.id = 1
+        mock_doc.name = None
+
         expected = {'id': 1, 'link': {
             'rel': 'self',
             'href': 'link'}}
         doc = Doc({'id': 1})
+
+        doc._model_manager = Mock()
+        doc._model_manager.uri.return_value = "link"
+        doc._model_manager.fetch.return_value = mock_doc
+
         doc.fetch()
 
         # name is not set, so don't render it
@@ -286,10 +272,8 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
         # now set name and make sure it gets rendered
         mock_doc.name = 'hello'
-        expected = {'id': 1, 'name': 'hello', 'link': {
-            'rel': 'self',
-            'href': 'link'}}
-        doc = Doc({'id': 1})
+        expected['name'] = "hello"
+
         doc.fetch()
         eq_(expected, json.loads(doc.to_json()))
 
@@ -348,17 +332,7 @@ class when_a_document_is_bound(unittest.TestCase):
     def it_can_collect_links(self):
         eq_('http://localhost/basket/1/', self.basket.uri())
 
-    def it_can_provide_a_link_using_the_django_model(self):
-        mock_editor = Mock()
-        mock_editor.get_absolute_url.return_value = \
-                "http://localhost/editor/1/"
-        EditorModel.objects.get.return_value = mock_editor
-
-        editor = Editor({'id': 1})
-        editor.fetch()
-        eq_("http://localhost/editor/1/", editor.uri())
-
-    def it_can_be_saved_to_a_django_model(self):
+    def it_can_be_saved_to_model(self):
         # Mock the actual django model
         DjangoModel = Mock(name='DjangoModel')
 
@@ -378,60 +352,23 @@ class when_a_document_is_bound(unittest.TestCase):
 
         # The expectation is that this instance gets newly created
         instance = ModelDocument({'id': 23, 'name': 'hello world'})
+        instance._model_manager.save = Mock()
         instance.save()
 
-        eq_(True, DjangoModel.objects.get_or_create.called)
-        # The attributes of the model should be set
-        #eq_(23, mock_model.id)
-        #eq_('hello world', mock_model.name)
+        eq_(True, instance._model_manager.save.called)
 
-        # Now don't create a new model, but update an existing one
-        # mock the manager object, It should throw an exception
-        DjangoModel.DoesNotExist = Exception
-        DjangoModel.objects.get.return_value = mock_model
+    def it_can_delete_its_model_backend(self):
+        doc1 = Article({'id': 1})
 
-        # The expectation is that this instance gets newly created
-        instance = ModelDocument({'id': 24, 'name': 'hello universe'})
-        instance.save()
+        # mock the model manager return
+        mock_doc1 = Mock()
+        mock_doc1.id = 1
+        doc1._model_manager = Mock()
+        doc1._model_manager.fetch.return_value = mock_doc1
 
-        eq_(True, DjangoModel.objects.get_or_create.called)
-        # The attributes of the model should be set
-        #eq_(24, mock_model.id)
-        #eq_('hello universe', mock_model.name)
-
-    def it_can_delete_the_instance_of_the_model_backend(self):
-        # Mock the actual django model
-        DjangoModel = Mock(name='DjangoModel')
-
-        class ModelDocument(documents.Document):
-            id = fields.NumberField()
-            name = fields.StringField()
-
-            class Meta:
-                # Use the mocked django model
-                model = DjangoModel
-
-        # create the mocked instance of the model
-        mock_model = DjangoModel.return_value
-        DjangoModel.DoesNotExist = Exception
-        DjangoModel.objects.get.return_value = mock_model
-
-        # The expectation is that this instance gets newly created
-        instance = ModelDocument({'id': 24, 'name': 'hello universe'})
-        instance.delete()
-
-        eq_(True, DjangoModel.objects.get.called)
-        eq_(True, mock_model.delete.called)
-
-        # Do nothing when the model insatnce does not exist
-        DjangoModel.objects.get.side_effect = DjangoModel.DoesNotExist
-
-        # The expectation is that this instance gets newly created
-        instance = ModelDocument({'id': 24, 'name': 'hello universe'})
-        instance.delete()
-
-        eq_(True, DjangoModel.objects.get.called)
-        eq_(True, mock_model.delete.called)
+        # delete the model
+        doc1.delete()
+        eq_([('delete', (doc1,))], doc1._model_manager.method_calls)
 
     def it_can_update_the_underlying_model(self):
         # Mock the actual django model
@@ -445,17 +382,22 @@ class when_a_document_is_bound(unittest.TestCase):
                 # Use the mocked django model
                 model = DjangoModel
 
-        # create the mocked instance of the model
-        mock_model = DjangoModel.return_value
-        DjangoModel.DoesNotExist = Exception
-        DjangoModel.objects.get_or_create.return_value = (mock_model, False)
+        # create the mocked instance of the model, model_manager.fetch returns
+        # it further down
+        mock_model = Mock()
+        mock_model.id = 24
+        mock_model.name = "hello universe"
 
         # The expectation is that this instance gets newly created
         instance = ModelDocument({'id': 24, 'name': 'hello universe'})
+        instance._model_manager = Mock()
+        instance._model_manager.fetch.return_value = mock_model
         instance.update({'name': 'new name'})
 
         eq_('new name', instance.name)
-        eq_(True, DjangoModel.objects.get_or_create.called)
+        eq_([
+            ('fetch', {'id': 24}),
+            ('save', (instance,))], instance._model_manager.method_calls)
 
 
 class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
