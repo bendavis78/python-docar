@@ -108,6 +108,19 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         eq_([('objects.get', {'id': 1})], DjangoModel.method_calls)
         eq_([('delete',)], mock_model.method_calls)
 
+        # If the model does not exist, nothing happens
+        DjangoModel.reset_mock()
+        mock_model.reset_mock()
+
+        DjangoModel.DoesNotExist = Exception
+        DjangoModel.objects.get.side_effect = DjangoModel.DoesNotExist
+
+        manager.delete(doc)
+
+        eq_([('objects.get', {'id': 1})], DjangoModel.method_calls)
+        # no method of the model should have been called
+        eq_([], mock_model.method_calls)
+
     def it_can_return_a_django_m2m_relationship_as_collection(self):
         DjangoModel = Mock(name="DjangoModel")
         mock_model = Mock()
