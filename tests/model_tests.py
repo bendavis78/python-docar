@@ -77,6 +77,7 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         field.name = "id"
         doc.id = 1
         doc._meta.identifier = ["id"]
+        doc._identifier_state.return_value = {"id": 1}
         doc._save_state.return_value = {"id": 1}
         doc._meta.local_fields = [field]
 

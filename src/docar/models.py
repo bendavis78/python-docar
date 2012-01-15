@@ -26,7 +26,7 @@ class DjangoModelManager(object):
         return instance
 
     def _get_collection(self, field):
-        # FIXME: Tis relies on the fact that fetch has been called already
+        # FIXME: This relies on the fact that fetch has been called already
         instance = self.instance
 
         # create a new collection first
@@ -42,7 +42,7 @@ class DjangoModelManager(object):
         return collection
 
     def save(self, document):
-        select_dict = {}
+        select_dict = document._identifier_state()
         m2m_relations = []
 
         # we run this method to make sure we catch all save_FIELD_field methods

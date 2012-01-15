@@ -487,8 +487,6 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
                 model = DjangoModel
 
         OtherModel = Mock(name='OtherModel')
-        OtherModel.DoesNotExist = Exception
-        OtherModel.objects.get.side_effect = OtherModel.DoesNotExist
 
         class Other(Document):
             id = fields.NumberField()
@@ -507,6 +505,7 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
 
     def it_can_map_the_relation_on_model_level_upon_creation(self):
         #This needs more thinking before proceeding
+        #FIXME: This test should move into the model_tests
         raise SkipTest
         DjangoModel = Mock(name='DjangoModel')
 
@@ -617,15 +616,16 @@ class when_a_document_field_cant_be_mapped_to_a_model(unittest.TestCase):
         # create the mocked instance of the model
         mock_model = Mock()
         mock_model.id = 1
-        DjangoModel.objects.get_or_create.return_value = (mock_model, False)
 
         # retrieve the document
         doc = ModelDocument({'id': 1})
+        doc._model_manager = Mock()
+        doc._model_manager.fetch.return_value = mock_model
         doc.fetch()
 
         eq_("Hello World", doc.name)
 
         # Now also save the document to the model, make sure the save overwrite
-        # method is used
-        doc.save()
+        # method is used. The save method of model_manager calls _save_state.
+        doc._save_state()
         eq_(True, doc.save_name_field.called)
