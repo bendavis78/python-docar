@@ -76,6 +76,7 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         field = fields.NumberField()
         field.name = "id"
         doc.id = 1
+        doc._context = {}
         doc._meta.identifier = ["id"]
         doc._identifier_state.return_value = {"id": 1}
         doc._save_state.return_value = {"id": 1}
@@ -301,3 +302,49 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
 
         ok_(isinstance(doc.doc1, Document))
         eq_(True, Doc1Model.objects.get.called)
+
+    def it_applies_the_context_to_itself_and_its_foreign_documents(self):
+        # prepare the app structure
+        Doc1Model = Mock(name="doc1_model")
+        Doc1Model.DoesNotExist = Exception
+
+        class Doc1(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = Doc1Model
+
+        Doc2Model = Mock(name="doc2_model")
+
+        class Doc2(Document):
+            id = fields.NumberField()
+            doc1 = fields.ForeignDocument(Doc1)
+
+            class Meta:
+                model = Doc2Model
+
+        # First return an existing model instance
+        mock_doc1 = Mock()
+        mock_doc2 = Mock()
+        # The fetch for the foreign document will raise a ModelDoesNotExist
+        # and therefore creates a new model instance
+        Doc1Model.objects.get.side_effect = Doc1Model.DoesNotExist
+        Doc1Model.objects.get_or_create.return_value = (mock_doc1, True)
+        Doc2Model.objects.get_or_create.return_value = (mock_doc2, True)
+
+        request = {
+                "id": 2,
+                "doc1": {
+                    "id": 1
+                    }
+                }
+
+        context = {'name': 'hello'}
+
+        doc = Doc2(request, context=context)
+        doc.save()
+
+        Doc1Model.objects.get_or_create.assert_called_once_with(id=1,
+                name='hello')
+        Doc2Model.objects.get_or_create.assert_called_once_with(id=2,
+                name='hello', doc1=mock_doc1)

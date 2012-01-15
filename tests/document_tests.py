@@ -277,6 +277,30 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         doc.fetch()
         eq_(expected, json.loads(doc.to_json()))
 
+    def it_can_supply_extra_context_also_to_its_foreign_documents(self):
+        Model1 = Mock()
+        Model2 = Mock()
+
+        class Doc1(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = Model1
+
+        class Doc2(Document):
+            id = fields.NumberField()
+            doc1 = fields.ForeignDocument(Doc1)
+
+            class Meta:
+                model = Model2
+
+        context = {'name': 'hello'}
+
+        doc2 = Doc2({'id': 1, 'doc1': {'id': 2}}, context=context)
+
+        eq_(context, doc2._context)
+        eq_(context, doc2.doc1._context)
+
 
 class when_a_representation_is_parsed(unittest.TestCase):
     def setUp(self):

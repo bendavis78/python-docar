@@ -126,7 +126,7 @@ class Document(object):
     """A document is a representation."""
     __metaclass__ = DocumentBase
 
-    def __init__(self, data=None):
+    def __init__(self, data=None, context={}):
         """Create a new document presentation of a resource.
 
         :param data: Initial values to use for this document.
@@ -137,6 +137,8 @@ class Document(object):
         if (not data or
                 type(data) is not types.DictType):
             return
+
+        self._context = context
 
         # set the preloaded attributes
         for field_name, val in data.items():
@@ -167,7 +169,7 @@ class Document(object):
                     # a foreign document, so we ignore this dict field
                     continue
                 # create the appripriate document and set it as an attribute
-                doc = Document[0](val)
+                doc = Document[0](data=val, context=context)
                 setattr(self, field_name, doc)
 
     def _identifier_state(self):
