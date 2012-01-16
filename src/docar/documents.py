@@ -107,9 +107,10 @@ class DocumentBase(type):
         for field in new_class._meta.related_fields:
             setattr(new_class, "%s_id" % field.name, None)
 
-        # Add the model manager
-        new_class._model_manager = ModelManager('django')
-        new_class._model_manager._model = new_class._meta.model
+        # Add the model manager if a model is set
+        if new_class._meta.model:
+            new_class._model_manager = ModelManager('django')
+            new_class._model_manager._model = new_class._meta.model
 
         return new_class
 
