@@ -9,7 +9,11 @@ def read(fname):
 
 extra = {}
 requirements = ['distribute', 'docutils'],
-tests_require = ['nose', 'coverage', 'mock']
+tests_require = ['nose', 'coverage', 'Mock']
+
+# In case we use python3
+if sys.version_info >= (3,):
+    extra['use_2to3'] = True
 
 if sys.version_info <= (2, 6):
     requirements.append('simplejson')
@@ -19,14 +23,13 @@ setup(
     version="0.1",
     packages=find_packages('src'),
     package_dir={'': 'src'},
-    #include_package_data=True,
+    include_package_data=True,
     #zip_safe=False,  # Don't create egg files, Django cannot find templates
                      # in egg files.
     install_requires=requirements,
-
     tests_require=tests_require,
     setup_requires='nose',
-#    test_suite="nose.collector",
+    test_suite="nose.collector",
     extras_require={'test': tests_require},
 
     author="Christo Buschek",
