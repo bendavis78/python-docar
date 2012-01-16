@@ -54,9 +54,19 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         # This is normally done when the Document is created.
         manager._model = DjangoModel
 
+        doc = Mock(name="mock_document", spec=Document)
+        field = fields.NumberField()
+        field.name = "id"
+        doc.id = 1
+        doc._context = {}
+        doc._meta.identifier = ["id"]
+        doc._identifier_state.return_value = {"id": 1}
+        doc._save_state.return_value = {"id": 1}
+        doc._meta.local_fields = [field]
+
         # make sure we are working with correct expectations
         eq_(DjangoModelManager, type(manager))
-        eq_(mock_model, manager.fetch(id=1))
+        eq_(mock_model, manager.fetch(doc))
         eq_([('objects.get', {'id': 1})], DjangoModel.method_calls)
 
     def it_can_save_data_to_the_underlying_model(self):

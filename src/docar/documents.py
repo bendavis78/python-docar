@@ -261,14 +261,8 @@ class Document(object):
     def fetch(self):
         """Fetch the model from the backend to create the representation of
         this resource."""
-        params = {}
-        # Construct the query dict
-        for elem in range(len(self._meta.identifier)):
-            params[self._meta.identifier[elem]] = getattr(self,
-                    self._meta.identifier[elem])
-
         # Retrieve the object from the backend
-        obj = self._model_manager.fetch(**params)
+        obj = self._model_manager.fetch(self)
 
         self._meta.model_instance = obj
 

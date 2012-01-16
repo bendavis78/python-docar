@@ -16,13 +16,15 @@ class ModelManager(object):
 class DjangoModelManager(object):
     model_type = 'django'
 
-    def fetch(self, *args, **kwargs):
+    def fetch(self, document):
+        state = document._identifier_state()
         try:
-            instance = self._model.objects.get(**kwargs)
+            instance = self._model.objects.get(**state)
         except self._model.DoesNotExist:
             raise ModelDoesNotExist("Fetch failed for %s" % str(self._model))
 
         self.instance = instance
+
         return instance
 
     def _get_collection(self, field):
@@ -57,9 +59,8 @@ class DjangoModelManager(object):
                 # a foreign document means we have to retrieve it from the
                 # model
                 doc = getattr(document, field.name)
-                state = doc._identifier_state()
                 try:
-                    instance = doc._model_manager.fetch(**state)
+                    instance = doc.fetch()
                 except ModelDoesNotExist:
                     #FIXME: make sure it doesn't throw an exception
                     doc.save()
@@ -88,11 +89,9 @@ class DjangoModelManager(object):
         self.instance = instance
 
     def delete(self, document):
-        select_dict = document._identifier_state()
-
         try:
             # First try to retrieve the existing model if it exists
-            instance = self.fetch(**select_dict)
+            instance = self.fetch(document)
         except ModelDoesNotExist:
             # In case the model does not exist, we do nothing
             return

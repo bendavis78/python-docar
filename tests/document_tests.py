@@ -420,7 +420,7 @@ class when_a_document_is_bound(unittest.TestCase):
 
         eq_('new name', instance.name)
         eq_([
-            ('fetch', {'id': 24}),
+            ('fetch', (instance,)),
             ('save', (instance,))], instance._model_manager.method_calls)
 
 
