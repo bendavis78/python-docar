@@ -9,8 +9,8 @@ from mock import Mock
 from docar import documents
 from docar import fields
 from docar import Document, Collection
-from docar.models import DjangoModelManager
-from docar.exceptions import ModelDoesNotExist
+from docar.backends import DjangoBackendManager
+from docar.exceptions import BackendDoesNotExist
 
 from app import Article, ArticleModel
 from app import Editor, EditorModel
@@ -150,8 +150,8 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         mock_editor.last_name = "Buschek"
         mock_editor.age = 31
 
-        mock_editor._model_manager = Mock()
-        mock_editor._model_manager.fetch.return_value = mock_editor
+        mock_editor._backend_manager = Mock()
+        mock_editor._backend_manager.fetch.return_value = mock_editor
 
         # the editor should fetch the age correctly
         editor.fetch()
@@ -218,8 +218,8 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         # mock the model manager return
         mock_doc1 = Mock()
         mock_doc1.id = 1
-        doc1._model_manager = Mock()
-        doc1._model_manager.fetch.return_value = mock_doc1
+        doc1._backend_manager = Mock()
+        doc1._backend_manager.fetch.return_value = mock_doc1
 
         # before we actually fetch the document, name should be empty
         eq_(None, doc1.name)
@@ -232,15 +232,15 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_("hello", doc1.name)
 
         # mock the manager object, It should throw an exception
-        doc1._model_manager.fetch.side_effect = ModelDoesNotExist
+        doc1._backend_manager.fetch.side_effect = BackendDoesNotExist
 
-        assert_raises(ModelDoesNotExist, doc1.fetch)
+        assert_raises(BackendDoesNotExist, doc1.fetch)
 
-    def it_creates_a_model_manager(self):
+    def it_creates_a_backend_manager(self):
         doc1 = Article({'id': 1})
 
-        eq_(True, hasattr(doc1, '_model_manager'))
-        eq_(DjangoModelManager, type(doc1._model_manager))
+        eq_(True, hasattr(doc1, '_backend_manager'))
+        eq_(DjangoBackendManager, type(doc1._backend_manager))
 
     def it_doesnt_render_optional_fields_that_are_set_to_none(self):
         DocModel = Mock(name='DocModel')
@@ -261,9 +261,9 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             'href': 'link'}}
         doc = Doc({'id': 1})
 
-        doc._model_manager = Mock()
-        doc._model_manager.uri.return_value = "link"
-        doc._model_manager.fetch.return_value = mock_doc
+        doc._backend_manager = Mock()
+        doc._backend_manager.uri.return_value = "link"
+        doc._backend_manager.fetch.return_value = mock_doc
 
         doc.fetch()
 
@@ -376,10 +376,10 @@ class when_a_document_is_bound(unittest.TestCase):
 
         # The expectation is that this instance gets newly created
         instance = ModelDocument({'id': 23, 'name': 'hello world'})
-        instance._model_manager.save = Mock()
+        instance._backend_manager.save = Mock()
         instance.save()
 
-        eq_(True, instance._model_manager.save.called)
+        eq_(True, instance._backend_manager.save.called)
 
     def it_can_delete_its_model_backend(self):
         doc1 = Article({'id': 1})
@@ -387,12 +387,12 @@ class when_a_document_is_bound(unittest.TestCase):
         # mock the model manager return
         mock_doc1 = Mock()
         mock_doc1.id = 1
-        doc1._model_manager = Mock()
-        doc1._model_manager.fetch.return_value = mock_doc1
+        doc1._backend_manager = Mock()
+        doc1._backend_manager.fetch.return_value = mock_doc1
 
         # delete the model
         doc1.delete()
-        eq_([('delete', (doc1,))], doc1._model_manager.method_calls)
+        eq_([('delete', (doc1,))], doc1._backend_manager.method_calls)
 
     def it_can_update_the_underlying_model(self):
         # Mock the actual django model
@@ -406,22 +406,22 @@ class when_a_document_is_bound(unittest.TestCase):
                 # Use the mocked django model
                 model = DjangoModel
 
-        # create the mocked instance of the model, model_manager.fetch returns
-        # it further down
+        # create the mocked instance of the model, backend_manager.fetch
+        # returns it further down
         mock_model = Mock()
         mock_model.id = 24
         mock_model.name = "hello universe"
 
         # The expectation is that this instance gets newly created
         instance = ModelDocument({'id': 24, 'name': 'hello universe'})
-        instance._model_manager = Mock()
-        instance._model_manager.fetch.return_value = mock_model
+        instance._backend_manager = Mock()
+        instance._backend_manager.fetch.return_value = mock_model
         instance.update({'name': 'new name'})
 
         eq_('new name', instance.name)
         eq_([
             ('fetch', (instance,)),
-            ('save', (instance,))], instance._model_manager.method_calls)
+            ('save', (instance,))], instance._backend_manager.method_calls)
 
 
 class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
@@ -643,13 +643,13 @@ class when_a_document_field_cant_be_mapped_to_a_model(unittest.TestCase):
 
         # retrieve the document
         doc = ModelDocument({'id': 1})
-        doc._model_manager = Mock()
-        doc._model_manager.fetch.return_value = mock_model
+        doc._backend_manager = Mock()
+        doc._backend_manager.fetch.return_value = mock_model
         doc.fetch()
 
         eq_("Hello World", doc.name)
 
         # Now also save the document to the model, make sure the save overwrite
-        # method is used. The save method of model_manager calls _save_state.
+        # method is used. The save method of backend_manager calls _save_state.
         doc._save_state()
         eq_(True, doc.save_name_field.called)

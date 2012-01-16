@@ -1,5 +1,6 @@
-class ModelDoesNotExist(Exception):
-    """Throw this error if the document tries to fetch a non existing model."""
+class BackendDoesNotExist(Exception):
+    """Throw this error if the document tries to fetch from a backend and the
+    model is not found."""
     pass
 
 

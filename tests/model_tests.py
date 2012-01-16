@@ -3,38 +3,38 @@ import unittest
 from nose.tools import eq_, ok_
 from mock import patch, Mock
 
-from docar.models import ModelManager, DjangoModelManager
+from docar.backends import BackendManager, DjangoBackendManager
 from docar import Document, Collection, fields
 
 
-class when_a_model_manager_gets_instantiated(unittest.TestCase):
+class when_a_backend_manager_gets_instantiated(unittest.TestCase):
     def it_can_provide_a_link_using_the_django_model(self):
         mock_model = Mock()
         mock_model.get_absolute_url.return_value = "link"
 
-        manager = ModelManager('django')
+        manager = BackendManager('django')
         manager.instance = mock_model
 
         eq_("link", manager.uri())
         eq_(True, mock_model.get_absolute_url.called)
 
-    def it_takes_the_model_type_as_an_argument(self):
-        manager = ModelManager('django')
-        eq_('django', manager.model_type)
+    def it_takes_the_backend_type_as_an_argument(self):
+        manager = BackendManager('django')
+        eq_('django', manager.backend_type)
 
-    def it_defaults_to_the_django_model_type(self):
-        manager = ModelManager()
-        eq_('django', manager.model_type)
+    def it_defaults_to_the_django_backend_type(self):
+        manager = BackendManager()
+        eq_('django', manager.backend_type)
 
-    def it_abstracts_a_specific_model_manager(self):
-        manager = ModelManager('django')
-        ok_(isinstance(manager, DjangoModelManager))
+    def it_abstracts_a_specific_backend_manager(self):
+        manager = BackendManager('django')
+        ok_(isinstance(manager, DjangoBackendManager))
 
-    def it_can_fetch_save_and_delete_to_the_specific_model_manager(self):
-        with patch('docar.models.DjangoModelManager') as mock:
+    def it_can_fetch_save_and_delete_to_the_specific_backend_manager(self):
+        with patch('docar.backends.DjangoBackendManager') as mock:
             mock_manager = Mock()
             mock_manager = mock.return_value
-            manager = ModelManager('django')
+            manager = BackendManager('django')
             # first assert that the manager is really mocked
             ok_(isinstance(manager, Mock))
             manager.fetch()
@@ -49,7 +49,7 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         mock_model = Mock()
         DjangoModel.objects.get.return_value = mock_model
 
-        manager = ModelManager('django')
+        manager = BackendManager('django')
         # The manager needs to know which model it connects to
         # This is normally done when the Document is created.
         manager._model = DjangoModel
@@ -65,7 +65,7 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         doc._meta.local_fields = [field]
 
         # make sure we are working with correct expectations
-        eq_(DjangoModelManager, type(manager))
+        eq_(DjangoBackendManager, type(manager))
         eq_(mock_model, manager.fetch(doc))
         eq_([('objects.get', {'id': 1})], DjangoModel.method_calls)
 
@@ -74,13 +74,13 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         mock_model = Mock()
         DjangoModel.objects.get_or_create.return_value = (mock_model, False)
 
-        manager = ModelManager('django')
+        manager = BackendManager('django')
         # The manager needs to know which model it connects to
         # This is normally done when the Document is created.
         manager._model = DjangoModel
 
         # make sure we are working with correct expectations
-        eq_(DjangoModelManager, type(manager))
+        eq_(DjangoBackendManager, type(manager))
 
         doc = Mock(name="mock_document", spec=Document)
         field = fields.NumberField()
@@ -101,13 +101,13 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         mock_model = Mock()
         DjangoModel.objects.get.return_value = mock_model
 
-        manager = ModelManager('django')
+        manager = BackendManager('django')
         # The manager needs to know which model it connects to
         # This is normally done when the Document is created.
         manager._model = DjangoModel
 
         # make sure we are working with correct expectations
-        eq_(DjangoModelManager, type(manager))
+        eq_(DjangoBackendManager, type(manager))
 
         # mock the actual document
         doc = Mock(name="MockDoc", spec=Document)
@@ -176,13 +176,13 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
                 identifier = 'id'
                 model = DjangoModel
 
-        manager = ModelManager('django')
+        manager = BackendManager('django')
         # The manager needs to know which model it connects to
         # This is normally done when the Document is created.
         manager._model = DjangoModel
 
         # make sure we are working with correct expectations
-        eq_(DjangoModelManager, type(manager))
+        eq_(DjangoBackendManager, type(manager))
 
         doc = Doc()
         doc.fetch()
@@ -349,7 +349,7 @@ class when_a_model_manager_gets_instantiated(unittest.TestCase):
         # First return an existing model instance
         mock_doc1 = Mock()
         mock_doc2 = Mock()
-        # The fetch for the foreign document will raise a ModelDoesNotExist
+        # The fetch for the foreign document will raise a BackendDoesNotExist
         # and therefore creates a new model instance
         Doc1Model.objects.get.side_effect = Doc1Model.DoesNotExist
         Doc1Model.objects.get_or_create.return_value = (mock_doc1, True)

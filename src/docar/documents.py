@@ -4,7 +4,7 @@ import types
 from bisect import bisect
 
 from .fields import ForeignDocument, CollectionField, NOT_PROVIDED
-from .models import ModelManager
+from .backends import BackendManager
 
 
 DEFAULT_NAMES = ('identifier', 'model', 'excludes')
@@ -109,8 +109,8 @@ class DocumentBase(type):
 
         # Add the model manager if a model is set
         if new_class._meta.model:
-            new_class._model_manager = ModelManager('django')
-            new_class._model_manager._model = new_class._meta.model
+            new_class._backend_manager = BackendManager('django')
+            new_class._backend_manager._model = new_class._meta.model
 
         return new_class
 
@@ -227,7 +227,7 @@ class Document(object):
                         'rel': 'related',
                         'href': elem.uri()}
             elif isinstance(field, CollectionField):
-                collection = self._model_manager._get_collection(field)
+                collection = self._backend_manager._get_collection(field)
                 data[field.name] = collection._prepare_render()
             else:
                 data[field.name] = getattr(self, field.name)
@@ -246,7 +246,7 @@ class Document(object):
 
     def save(self):
         """Save the document in a django model backend."""
-        self._model_manager.save(self)
+        self._backend_manager.save(self)
 
     def update(self, data):
         # FIXME: Handle ForeignDocument relations
@@ -262,7 +262,7 @@ class Document(object):
         """Fetch the model from the backend to create the representation of
         this resource."""
         # Retrieve the object from the backend
-        obj = self._model_manager.fetch(self)
+        obj = self._backend_manager.fetch(self)
 
         self._meta.model_instance = obj
 
@@ -289,9 +289,9 @@ class Document(object):
 
     def delete(self):
         """Delete a model instance associated with this document."""
-        #self._model_manager.delete(self._meta.identifier,
+        #self._backend_manager.delete(self._meta.identifier,
         #        **self._save_state())
-        self._model_manager.delete(self)
+        self._backend_manager.delete(self)
 
     def uri(self):
         """Return the absolute uri for this resource.
@@ -307,4 +307,4 @@ class Document(object):
             This method should always return the absolute URI as a string.
 
         """
-        return self._model_manager.uri()
+        return self._backend_manager.uri()
