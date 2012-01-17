@@ -1,5 +1,4 @@
 import unittest
-import types
 import json
 
 from nose.tools import eq_, assert_raises, ok_
@@ -12,9 +11,9 @@ from docar import Document, Collection
 from docar.backends import DjangoBackendManager
 from docar.exceptions import BackendDoesNotExist
 
-from app import Article, ArticleModel
-from app import Editor, EditorModel
-from app import TagModel
+from .app import Article, ArticleModel
+from .app import Editor, EditorModel
+from .app import TagModel
 
 
 BASKET = {
@@ -71,7 +70,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_(True, hasattr(self.article, 'delete'))
 
     def it_has_a_list_of_fields_in_meta(self):
-        eq_(types.ListType, type(self.article._meta.local_fields))
+        eq_(list, type(self.article._meta.local_fields))
         eq_(fields.NumberField, type(self.article._meta.local_fields[0]))
         eq_(fields.StringField, type(self.article._meta.local_fields[1]))
 
@@ -94,9 +93,9 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
         d = Doc()
 
-        eq_(types.ListType, type(d._meta.local_fields))
-        eq_(types.ListType, type(d._meta.related_fields))
-        eq_(types.ListType, type(d._meta.collection_fields))
+        eq_(list, type(d._meta.local_fields))
+        eq_(list, type(d._meta.related_fields))
+        eq_(list, type(d._meta.collection_fields))
 
         eq_(1, len(d._meta.related_fields))
         eq_(1, len(d._meta.collection_fields))
@@ -104,11 +103,11 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
     def it_has_an_attribute_for_each_field(self):
         eq_(True, hasattr(self.article, 'name'))
-        eq_(types.NoneType, type(self.article.name))
+        eq_(None, self.article.name)
 
         # If a default value is specified, the field is set to that one
         eq_(True, hasattr(self.article, 'id'))
-        eq_(types.NoneType, type(self.article.id))
+        eq_(None, self.article.id)
 
     def it_has_a_meta_attribute_to_store_options(self):
         eq_(True, hasattr(self.article, '_meta'))

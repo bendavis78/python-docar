@@ -8,7 +8,7 @@ def read(fname):
 
 
 extra = {}
-requirements = ['distribute', 'docutils'],
+requirements = ['distribute', 'docutils', 'requests'],
 tests_require = ['nose', 'coverage', 'Mock']
 
 # In case we use python3
