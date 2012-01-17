@@ -1,9 +1,10 @@
 .coverage
+.tox
 cover
 docs/_build
 dist
 build
-src/roa.egg-info
+src/docar.egg-info
 src/.ropeproject
 *.pyc
 *.swp
