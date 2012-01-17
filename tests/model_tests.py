@@ -1,9 +1,11 @@
 import unittest
+import json
 
 from nose.tools import eq_, ok_
 from mock import patch, Mock
 
-from docar.backends import BackendManager, DjangoBackendManager
+from docar.backends import BackendManager, DjangoBackendManager, \
+    HttpBackendManager
 from docar import Document, Collection, fields
 
 
@@ -30,6 +32,70 @@ class when_a_backend_manager_gets_instantiated(unittest.TestCase):
         manager = BackendManager('django')
         ok_(isinstance(manager, DjangoBackendManager))
 
+        manager = BackendManager('http')
+        ok_(isinstance(manager, HttpBackendManager))
+
+    def it_can_specify_the_backend_type_as_a_meta_option(self):
+        class Doc(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                backend_type = 'django'
+                model = Mock()
+
+        doc = Doc()
+        ok_(isinstance(doc._backend_manager, DjangoBackendManager))
+
+        class Doc(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                backend_type = 'http'
+
+        doc = Doc()
+        ok_(isinstance(doc._backend_manager, HttpBackendManager))
+
+
+class when_a_http_backend_manager_gets_instantiated(unittest.TestCase):
+    def setUp(self):
+        self.request_patcher = patch('docar.backends.http.requests')
+        self.mock_request = self.request_patcher.start()
+
+    def tearDown(self):
+        self.request_patcher.stop()
+
+    def it_can_fetch_resources_from_a_remote_endpoint(self):
+        mock_resp = Mock(name="mock_response")
+        expected = {'id': 1}
+        mock_resp.content = json.dumps(expected)
+
+        self.mock_request.get.return_value = mock_resp
+
+        manager = BackendManager('http')
+
+        class Doc(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                backend_type = 'http'
+
+            def uri(self):
+                return 'http://location'
+
+        doc = Doc({'id': 1})
+
+        # the http manager returns the response as python dict
+        content = manager.fetch(doc)
+
+        # make sure we are working with correct expectations
+        eq_(HttpBackendManager, type(manager))
+        eq_(mock_resp, manager.response)
+        ok_(isinstance(content, dict))
+        eq_([('get', {'url': doc.uri()})],
+                self.mock_request.method_calls)
+
+
+class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
     def it_can_fetch_save_and_delete_to_the_specific_backend_manager(self):
         with patch('docar.backends.DjangoBackendManager') as mock:
             mock_manager = Mock()

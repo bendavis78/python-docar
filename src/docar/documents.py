@@ -7,7 +7,7 @@ from .fields import ForeignDocument, CollectionField, NOT_PROVIDED
 from .backends import BackendManager
 
 
-DEFAULT_NAMES = ('identifier', 'model', 'excludes')
+DEFAULT_NAMES = ('identifier', 'model', 'excludes', 'backend_type')
 
 
 def clean_meta(Meta):
@@ -27,6 +27,7 @@ class Options(object):
     def __init__(self, meta):
         # Initialize some default values
         self.model = None
+        self.backend_type = 'django'
         self.identifier = ['id']
         # FIXME: Do some type checking
         self.excludes = []
@@ -108,8 +109,9 @@ class DocumentBase(type):
             setattr(new_class, "%s_id" % field.name, None)
 
         # Add the model manager if a model is set
-        if new_class._meta.model:
-            new_class._backend_manager = BackendManager('django')
+        new_class._backend_manager = BackendManager(
+                new_class._meta.backend_type)
+        if new_class._meta.backend_type in 'django':
             new_class._backend_manager._model = new_class._meta.model
 
         return new_class

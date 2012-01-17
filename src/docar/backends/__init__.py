@@ -1,9 +1,10 @@
 import sys
 
 from .django import DjangoBackendManager
+from .http import HttpBackendManager
 
 
-__all__ = ['DjangoBackendManager']
+__all__ = ['DjangoBackendManager', 'HttpBackendManager']
 
 
 class BackendManager(object):
