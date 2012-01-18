@@ -160,6 +160,43 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
         eq_(True, isinstance(doc.ext, Other))
         eq_(True, isinstance(doc.col, OtherCol))
 
+        # we should have made one GET request
+        eq_([('get', {'url': 'http://location'})],
+                self.mock_request.method_calls)
+
+    def it_can_update_the_document_on_the_remote_backend(self):
+        class Doc(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+
+            class Meta:
+                backend_type = 'http'
+
+            def uri(self):
+                return 'http://location'
+
+        doc = Doc({'id': 1})
+
+        expected = {
+                'id': 1,
+                'name': 'other',
+                }
+
+        response = Mock(name='mock_http_response')
+        response.content = json.dumps(expected)
+        response.status_code = 200
+
+        # set the return value of the GET request
+        self.mock_request.get.return_value = response
+
+        doc.update({'name': 'other'})
+
+        # we should have made one GET and one PUT request
+        eq_([('get', {'url': 'http://location'}),
+            ('put', {'url': 'http://location', 'data': json.dumps(expected)})],
+                self.mock_request.method_calls)
+        eq_('other', doc.name)
+
 
 class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
     def it_can_fetch_save_and_delete_to_the_specific_backend_manager(self):
