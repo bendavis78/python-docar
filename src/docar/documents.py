@@ -266,6 +266,42 @@ class Document(object):
         # Retrieve the object from the backend
         obj = self._backend_manager.fetch(self)
 
+        if self._meta.backend_type in 'http':
+            # we assume to get a python dict back
+            #FIXME: Add exception in case its not a list
+            if not isinstance(obj, dict):
+                return
+
+            # store the fetched python dict
+            self._meta._backend_instance = obj
+
+            # flag the document as bound
+            #FIXME: Set maybe also a timestamp for cache expire
+            #self.is_bound = True
+
+            # iterate over the fields, and query the python dict
+            for field in self._meta.local_fields:
+                value = obj[field.name]
+                if isinstance(value, dict):
+                    # assume a foreign document
+                    Document = field.Document
+                    #TODO:Need some recursion to nest the foreign documents
+                    doc = Document(value)
+                    setattr(self, field.name, doc)
+                elif isinstance(value, list):
+                    # assume a m2m/collection
+                    Collection = field.Collection
+                    collection = Collection()
+                    for item in value:
+                        doc = collection.document(item)
+                        collection.add(doc)
+                    setattr(self, field.name, collection)
+                else:
+                    setattr(self, field.name, value)
+
+            # Make sure the django part gets executed
+            return
+
         self._meta.model_instance = obj
 
         for field in self._meta.local_fields:

@@ -95,6 +95,72 @@ class when_a_http_backend_manager_gets_instantiated(unittest.TestCase):
                 self.mock_request.method_calls)
 
 
+class when_a_http_client_document_is_instantiated(unittest.TestCase):
+    def setUp(self):
+        self.request_patcher = patch('docar.backends.http.requests')
+        self.mock_request = self.request_patcher.start()
+
+    def tearDown(self):
+        self.request_patcher.stop()
+
+    def it_can_bind_itself_by_fetching_a_representation(self):
+        class Other(Document):
+            other = fields.StringField()
+
+            class Meta:
+                backend_type = 'http'
+
+        class OtherCol(Collection):
+            document = Other
+
+        class Doc(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+            pub = fields.BooleanField()
+            ext = fields.ForeignDocument(Other)
+            col = fields.CollectionField(OtherCol)
+
+            class Meta:
+                backend_type = 'http'
+
+            def uri(self):
+                return 'http://location'
+
+        doc = Doc({'id': 1})
+
+        expected = {
+                'id': 1,
+                'name': 'hello',
+                'pub': True,
+                'ext': {
+                    'other': 'document'
+                    },
+                'col': [
+                    {'other': 'first'},
+                    {'other': 'second'},
+                    ]
+                }
+        response = Mock(name='mock_http_response')
+        response.content = json.dumps(expected)
+        response.status_code = 200
+
+        # set the return value of the GET request
+        self.mock_request.get.return_value = response
+
+        # Make sure the name is not set right now
+        eq_(expected['id'], doc.id)
+        eq_(None, doc.name)
+
+        # fetch the document from the HTTP backen, (is_bound = True)
+        doc.fetch()
+
+        eq_(expected['id'], doc.id)
+        eq_(expected['name'], doc.name)
+        eq_(expected['pub'], doc.pub)
+        eq_(True, isinstance(doc.ext, Other))
+        eq_(True, isinstance(doc.col, OtherCol))
+
+
 class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
     def it_can_fetch_save_and_delete_to_the_specific_backend_manager(self):
         with patch('docar.backends.DjangoBackendManager') as mock:
