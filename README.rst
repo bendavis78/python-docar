@@ -34,7 +34,8 @@ override the builtin serializers.
 Example
 =======
 
-The following code is a simplified example of how to use ``python-docar``::
+The following code is a simplified example of how to use ``python-docar``. We
+start using the django backend::
 
     # First declare your document
     from webapp.models import EntryModel, AuthorModel
@@ -44,6 +45,7 @@ The following code is a simplified example of how to use ``python-docar``::
         name = fields.StringField()
 
         class Meta:
+            backend_type = 'django'
             model = AuthorModel
             identifier = 'name'
         
@@ -55,6 +57,7 @@ The following code is a simplified example of how to use ``python-docar``::
         author = fields.ForeignDocument(Author)
 
         class Meta:
+            backend_type = 'django'
             model = EntryModel
             model_type = 'django'  # The default atm
             #identifier = 'id'  # The identifier defaults to 'id'
@@ -98,6 +101,11 @@ that::
             "href": "https://example.org/entry/1/"
             }
     }
+
+There is another backend in development, that connects documents to a remote
+HTTP endpoint. The API is the same, only the underlying backend type differs.
+This can be used for client applications to connect to remote services using
+the same document declarations.
 
 Installation
 ============
