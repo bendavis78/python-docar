@@ -300,6 +300,24 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_(context, doc2._context)
         eq_(context, doc2.doc1._context)
 
+    def it_can_supply_additional_parameters_to_the_backend_manager(self):
+        mock_manager = Mock(name="mocked_http_backend_manager")
+
+        class Doc1(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                backend_type = 'http'
+
+        doc = Doc1({'id': 1})
+        doc._backend_manager = mock_manager
+
+        # simulate a fetch
+        doc.fetch(username='crito', password='secret')
+
+        eq_([('fetch', (doc,), {'username': 'crito', 'password': 'secret'})],
+                mock_manager.method_calls)
+
 
 class when_a_representation_is_parsed(unittest.TestCase):
     def setUp(self):

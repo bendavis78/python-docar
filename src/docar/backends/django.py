@@ -4,7 +4,7 @@ from docar.exceptions import BackendDoesNotExist
 class DjangoBackendManager(object):
     backend_type = 'django'
 
-    def fetch(self, document):
+    def fetch(self, document, **kwargs):
         state = document._identifier_state()
         try:
             instance = self._model.objects.get(**state)

@@ -3,6 +3,7 @@ import json
 
 from nose.tools import eq_, ok_
 from mock import patch, Mock
+from requests.auth import HTTPBasicAuth
 
 from docar.backends import BackendManager, DjangoBackendManager, \
     HttpBackendManager
@@ -92,6 +93,41 @@ class when_a_http_backend_manager_gets_instantiated(unittest.TestCase):
         eq_(mock_resp, manager.response)
         ok_(isinstance(content, dict))
         eq_([('get', {'url': doc.uri()})],
+                self.mock_request.method_calls)
+
+    @patch('docar.backends.http.HTTPBasicAuth')
+    def it_can_take_credentials_as_argument(self, mock_auth):
+        auth_token = HTTPBasicAuth('crito', 'secret')
+        mock_auth.return_value = auth_token
+
+        mock_resp = Mock(name="mock_response")
+        expected = {'id': 1}
+        mock_resp.content = json.dumps(expected)
+
+        self.mock_request.get.return_value = mock_resp
+
+        manager = BackendManager('http')
+
+        class Doc(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                backend_type = 'http'
+
+            def uri(self):
+                return 'http://location'
+
+        doc = Doc({'id': 1})
+
+        # the http manager returns the response as python dict
+        content = manager.fetch(doc, username='crito', password='secret')
+
+        # make sure we are working with correct expectations
+        # make sure we are working with correct expectations
+        eq_(HttpBackendManager, type(manager))
+        eq_(mock_resp, manager.response)
+        ok_(isinstance(content, dict))
+        eq_([('get', {'url': doc.uri(), 'auth': auth_token})],
                 self.mock_request.method_calls)
 
 

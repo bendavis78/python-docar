@@ -260,11 +260,11 @@ class Document(object):
         # save the representation to the model
         self.save()
 
-    def fetch(self):
+    def fetch(self, **kwargs):
         """Fetch the model from the backend to create the representation of
         this resource."""
         # Retrieve the object from the backend
-        obj = self._backend_manager.fetch(self)
+        obj = self._backend_manager.fetch(self, **kwargs)
 
         if self._meta.backend_type in 'http':
             # we assume to get a python dict back

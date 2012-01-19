@@ -1,11 +1,17 @@
 import json
 import requests
+from requests.auth import HTTPBasicAuth
 
 
 class HttpBackendManager(object):
 
-    def fetch(self, document):
-        response = requests.get(url=document.uri())
+    def fetch(self, document, *args, **kwargs):
+        params = {}
+        if 'username' in kwargs and 'password' in kwargs:
+            # we enable authentication
+            auth = HTTPBasicAuth(kwargs['username'], kwargs['password'])
+            params['auth'] = auth
+        response = requests.get(url=document.uri(), **params)
         self.response = response
 
         # serialize from json and return a python dict
