@@ -328,11 +328,11 @@ class Document(object):
                 # object
                 setattr(self, field.name, getattr(obj, field.name))
 
-    def delete(self):
+    def delete(self, **kwargs):
         """Delete a model instance associated with this document."""
         #self._backend_manager.delete(self._meta.identifier,
         #        **self._save_state())
-        self._backend_manager.delete(self)
+        self._backend_manager.delete(self, **kwargs)
 
     def uri(self):
         """Return the absolute uri for this resource.

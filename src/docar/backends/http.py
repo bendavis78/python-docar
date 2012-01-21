@@ -40,8 +40,13 @@ class HttpBackendManager(object):
 
     def delete(self, document, *args, **kwargs):
         # first make a GET request to see if the resource exists
+        params = {}
+        if 'username' in kwargs and 'password' in kwargs:
+            # we enable authentication
+            auth = HTTPBasicAuth(kwargs['username'], kwargs['password'])
+            params['auth'] = auth
         if not hasattr(self, 'response'):
             self.fetch(document, *args, **kwargs)
         response = requests.delete(
-                url=document.uri())
+                url=document.uri(), **params)
         self.response = response
