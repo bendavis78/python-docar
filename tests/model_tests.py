@@ -130,6 +130,44 @@ class when_a_http_backend_manager_gets_instantiated(unittest.TestCase):
         eq_([('get', {'url': doc.uri(), 'auth': auth_token})],
                 self.mock_request.method_calls)
 
+    def it_can_create_new_remote_resources(self):
+        mock_get = Mock(name="mock_get")
+        mock_get.status_code = 404
+        mock_get.content = ''
+        expected = {'id': 1}
+        mock_post = Mock(name="mock_post")
+        mock_post.status_code = 201
+        mock_post.content = json.dumps(expected)
+
+        self.mock_request.get.return_value = mock_get
+        self.mock_request.post.return_value = mock_post
+
+        manager = BackendManager('http')
+
+        class Doc(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                backend_type = 'http'
+
+            def uri(self):
+                return 'http://location'
+
+            post_uri = uri
+
+        doc = Doc({'id': 1})
+
+        # create a new remote resource
+        manager.save(doc)
+
+        # creating a new resource should first return a 404 on a get request,
+        # then a 201 on creation
+        eq_([
+            ('get', {'url': 'http://location'}),
+            ('post', {'url': 'http://location',
+                'data': json.dumps(expected)})],
+            self.mock_request.method_calls)
+
 
 class when_a_http_client_document_is_instantiated(unittest.TestCase):
     def setUp(self):

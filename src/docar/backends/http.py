@@ -15,11 +15,25 @@ class HttpBackendManager(object):
         self.response = response
 
         # serialize from json and return a python dict
-        return json.loads(self.response.content)
+        if self.response.content:
+            return json.loads(self.response.content)
+        else:
+            return {}
 
-    def save(self, document):
+    def save(self, document, *args, **kwargs):
         data = json.dumps(document._save_state())
-        response = requests.put(
-                url=document.uri(),
-                data=data)
+        # first make a GET request to see if the resource exists
+        if not hasattr(self, 'response'):
+            self.fetch(document, *args, **kwargs)
+
+        # If the resource didnt exist, create it, otherwise update it
+        if self.response.status_code == 404:
+            # we create a new resource
+            response = requests.post(
+                    url=document.post_uri(),
+                    data=data)
+        elif self.response.status_code == 200:
+            response = requests.put(
+                    url=document.uri(),
+                    data=data)
         self.response = response
