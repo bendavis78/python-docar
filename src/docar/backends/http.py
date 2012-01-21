@@ -37,3 +37,11 @@ class HttpBackendManager(object):
                     url=document.uri(),
                     data=data)
         self.response = response
+
+    def delete(self, document, *args, **kwargs):
+        # first make a GET request to see if the resource exists
+        if not hasattr(self, 'response'):
+            self.fetch(document, *args, **kwargs)
+        response = requests.delete(
+                url=document.uri())
+        self.response = response
