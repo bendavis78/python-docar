@@ -281,6 +281,9 @@ class Document(object):
 
             # iterate over the fields, and query the python dict
             for field in self._meta.local_fields:
+                if not field.name in obj:
+                    # The field is not in the dict (optional?)
+                    continue
                 value = obj[field.name]
                 if isinstance(value, dict):
                     # assume a foreign document
