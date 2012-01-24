@@ -135,6 +135,7 @@ class when_a_http_backend_manager_gets_instantiated(unittest.TestCase):
         mock_resp.content = json.dumps(expected)
 
         self.mock_request.get.return_value = mock_resp
+        self.mock_request.delete.return_value = mock_resp
 
         manager = BackendManager('http')
 
@@ -151,13 +152,15 @@ class when_a_http_backend_manager_gets_instantiated(unittest.TestCase):
 
         # the http manager returns the response as python dict
         content = manager.fetch(doc, username='crito', password='secret')
+        manager.delete(doc, username='crito', password='secret')
 
-        # make sure we are working with correct expectations
         # make sure we are working with correct expectations
         eq_(HttpBackendManager, type(manager))
         eq_(mock_resp, manager.response)
         ok_(isinstance(content, dict))
-        eq_([('get', {'url': doc.uri(), 'auth': auth_token})],
+        eq_([
+            ('get', {'url': doc.uri(), 'auth': auth_token}),
+            ('delete', {'url': doc.uri(), 'auth': auth_token})],
                 self.mock_request.method_calls)
 
     def it_can_create_new_remote_resources(self):
@@ -467,17 +470,17 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
                     "href": "A"
                     },
                 "others": [
-            {
-            "rel": "item",
-            "href": "1",
-            "id": 1
-            },
-            {
-            "rel": "item",
-            "href": "2",
-            "id": 2
+                    {
+                    "rel": "item",
+                    "href": "1",
+                    "id": 1
+                    },
+                    {
+                    "rel": "item",
+                    "href": "2",
+                    "id": 2
+                    }]
             }
-        ]}
 
         eq_(expected, doc._prepare_render())
 
