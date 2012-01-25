@@ -1,4 +1,5 @@
 .coverage
+.ropeproject
 .tox
 cover
 docs/_build
