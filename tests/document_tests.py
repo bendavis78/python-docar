@@ -2,7 +2,6 @@ import unittest
 import json
 
 from nose.tools import eq_, assert_raises, ok_
-from nose.exc import SkipTest
 from mock import Mock
 
 from docar import documents
@@ -11,9 +10,8 @@ from docar import Document, Collection
 from docar.backends import DjangoBackendManager
 from docar.exceptions import BackendDoesNotExist
 
-from .app import Article, ArticleModel
-from .app import Editor, EditorModel
-from .app import TagModel
+from .app import Article
+from .app import Editor
 
 
 BASKET = {
@@ -144,13 +142,17 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         editor = Editor({
             'first_name': 'Christo',
             'last_name': 'Buschek'})
-        mock_editor = EditorModel.return_value
-        mock_editor.first_name = "Christo"
-        mock_editor.last_name = "Buschek"
-        mock_editor.age = 31
+        mock_editor = {
+                'first_name': 'Christo',
+                'last_name': 'Buschek',
+                'age': 31}
+        #mock_editor = EditorModel.return_value
+        #mock_editor.first_name = "Christo"
+        #mock_editor.last_name = "Buschek"
+        #mock_editor.age = 31
 
-        mock_editor._backend_manager = Mock()
-        mock_editor._backend_manager.fetch.return_value = mock_editor
+        editor._backend_manager = Mock()
+        editor._backend_manager.fetch.return_value = mock_editor
 
         # the editor should fetch the age correctly
         editor.fetch()
@@ -228,8 +230,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         doc1 = Article({'id': 1})
 
         # mock the model manager return
-        mock_doc1 = Mock()
-        mock_doc1.id = 1
+        mock_doc1 = {'id': 1}
         doc1._backend_manager = Mock()
         doc1._backend_manager.fetch.return_value = mock_doc1
 
@@ -237,7 +238,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_(None, doc1.name)
 
         # we change the name attribute of the model instance
-        mock_doc1.name = "hello"
+        mock_doc1['name'] = "hello"
 
         # this should all work out now
         doc1.fetch()
@@ -264,9 +265,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             class Meta:
                 model = DocModel
 
-        mock_doc = Mock()
-        mock_doc.id = 1
-        mock_doc.name = None
+        mock_doc = {'id': 1, 'name': None}
 
         expected = {'id': 1, 'link': {
             'rel': 'self',
@@ -283,7 +282,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_(expected, json.loads(doc.to_json()))
 
         # now set name and make sure it gets rendered
-        mock_doc.name = 'hello'
+        mock_doc['name'] = 'hello'
         expected['name'] = "hello"
 
         doc.fetch()
@@ -315,6 +314,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
     def it_can_supply_additional_parameters_to_the_backend_manager(self):
         mock_manager = Mock(name="mocked_http_backend_manager")
+        mock_manager.fetch.return_value = {}
 
         class Doc1(Document):
             id = fields.NumberField()
@@ -438,9 +438,7 @@ class when_a_document_is_bound(unittest.TestCase):
 
         # create the mocked instance of the model, backend_manager.fetch
         # returns it further down
-        mock_model = Mock()
-        mock_model.id = 24
-        mock_model.name = "hello universe"
+        mock_model = {'id': 24, 'name': 'hello universe'}
 
         # The expectation is that this instance gets newly created
         instance = ModelDocument({'id': 24, 'name': 'hello universe'})
@@ -456,76 +454,49 @@ class when_a_document_is_bound(unittest.TestCase):
 
 class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
     def it_can_render_the_document_inline(self):
-        #prepare the setup
-        mock_editor = Mock()
-        mock_editor.id = 1
-        mock_editor.age = 31
-        mock_editor.first_name = 'Christo'
-        mock_editor.last_name = 'Buschek'
-        mock_editor.get_absolute_url.return_value = \
-                "http://localhost/editor/1/"
+        Doc1Model = Mock(name="doc1_model")
+        Doc2Model = Mock(name="doc2_model")
 
-        EditorModel.objects.get.return_value = mock_editor
-        EditorModel.reset_mock()
+        class Doc1(Document):
+            name = fields.StringField()
 
-        tag1 = Mock()
-        tag1.slug = "tag1"
-        tag1.get_absolute_url.return_value = "tag1_location"
-        tag2 = Mock()
-        tag2.slug = "tag2"
-        tag2.get_absolute_url.return_value = "tag2_location"
+            class Meta:
+                model = Doc1Model
 
-        tagcloud = [tag2, tag1]
-        tag_list = [tag2, tag1]
+            def uri(self):
+                return 'http://location'
 
-        def tag_side_effect(*args, **kwargs):
-            return tag_list.pop()
+        class Doc2(Document):
+            name = fields.StringField()
+            doc1 = fields.ForeignDocument(Doc1)
 
-        mock_article = Mock()
-        mock_article.id = 1
-        mock_article.name = "Headline"
-        mock_article.get_absolute_url.return_value = "link"
-        mock_article.editor = mock_editor
+            class Meta:
+                model = Doc2Model
 
-        mock_article.tags.all.return_value = tagcloud
+            def uri(self):
+                return 'http://location'
 
-        TagModel.objects.get.side_effect = tag_side_effect
+        doc1 = Doc1({'name': 'doc1'})
+        doc2 = Doc2({'name': 'doc2'})
+        doc2._backend_manager = Mock()
+        doc2._backend_manager.fetch.return_value = {
+                'name': 'doc2',
+                'doc1': doc1}
 
-        ArticleModel.objects.get.return_value = mock_article
+        doc2.fetch()
 
         expected = {
-                'id': 1,
-                'name': 'Headline',
-                'editor': {
+                'name': 'doc2',
+                'doc1': {
                     'rel': 'related',
-                    'href': 'http://localhost/editor/1/'
+                    'href': 'http://location'
                     },
-                'tags': [
-                    {
-                        "slug": "tag1",
-                        "rel": "item",
-                        "href": "tag1_location"
-                        },
-                    {
-                        "slug": "tag2",
-                        "rel": "item",
-                        "href": "tag2_location"
-                        },
-                    ],
                 'link': {
                     'rel': 'self',
-                    'href': mock_article.get_absolute_url()
-                    }
+                    'href': 'http://location'}
                 }
 
-        article = Article({'id': 1})
-        article.fetch()
-        eq_(expected, json.loads(article.to_json()))
-        eq_([("objects.get", {
-                "first_name": "Christo",
-                "last_name": "Buschek"}
-            )],
-                EditorModel.method_calls)
+        eq_(expected, json.loads(doc2.to_json()))
 
     def it_sets_the_attribute_as_a_document(self):
         DjangoModel = Mock(name='DjangoModel')
@@ -609,40 +580,3 @@ class when_a_document_contains_a_collection_field(unittest.TestCase):
 
         ok_(isinstance(doc.col, Col))
         eq_(2, len(doc.col.collection_set))
-
-
-class when_a_document_field_cant_be_mapped_to_a_model(unittest.TestCase):
-    def it_can_provide_a_fetch_method(self):
-        # Mock the actual django model
-        DjangoModel = Mock(name='DjangoModel')
-
-        class ModelDocument(documents.Document):
-            id = fields.NumberField()
-            name = fields.StringField()
-
-            class Meta:
-                # Use the mocked django model
-                model = DjangoModel
-
-            def fetch_name_field(self):
-                return "Hello World"
-
-            save_name_field = Mock()  # make sure this method has been called
-
-        # create the mocked instance of the model
-        mock_model = Mock()
-        mock_model.id = 1
-
-        # retrieve the document
-        doc = ModelDocument({'id': 1})
-        doc._backend_manager = Mock()
-        doc._backend_manager.fetch.return_value = mock_model
-        doc.fetch()
-
-        eq_("Hello World", doc.name)
-
-        # Now also save the document to the model, make sure the save overwrite
-        # method is used. The save method of backend_manager calls
-        # ``_prepare_save``.
-        doc._prepare_save()
-        eq_(True, doc.save_name_field.called)

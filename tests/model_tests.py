@@ -216,6 +216,7 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
 
             class Meta:
                 backend_type = 'http'
+                identifier = 'other'
 
         class OtherCol(Collection):
             document = Other
@@ -226,12 +227,17 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
             pub = fields.BooleanField()
             ext = fields.ForeignDocument(Other)
             col = fields.CollectionField(OtherCol)
+            optional = fields.StringField()
+            fetched = fields.StringField()
 
             class Meta:
                 backend_type = 'http'
 
             def uri(self):
                 return 'http://location'
+
+            def fetch_fetched_field(self):
+                return 'fetch'
 
         doc = Doc({'id': 1})
 
@@ -245,7 +251,8 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
                 'col': [
                     {'other': 'first'},
                     {'other': 'second'},
-                    ]
+                    ],
+                'fetch': 'jaja'
                 }
         response = Mock(name='mock_http_response')
         response.content = json.dumps(expected)
@@ -264,6 +271,8 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
         eq_(expected['id'], doc.id)
         eq_(expected['name'], doc.name)
         eq_(expected['pub'], doc.pub)
+        eq_(expected['fetch'], doc.fetched)
+        eq_(None, doc.optional)
         eq_(True, isinstance(doc.ext, Other))
         eq_(True, isinstance(doc.col, OtherCol))
 
@@ -384,6 +393,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
     def it_can_fetch_data_from_the_underlying_model(self):
         DjangoModel = Mock(name="DjangoModel")
         mock_model = Mock()
+        mock_model.id = 1
         DjangoModel.objects.get.return_value = mock_model
 
         manager = BackendManager('django')
@@ -403,7 +413,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
 
         # make sure we are working with correct expectations
         eq_(DjangoBackendManager, type(manager))
-        eq_(mock_model, manager.fetch(doc))
+        eq_({'id': 1}, manager.fetch(doc))
         eq_([('objects.get', {'id': 1})], DjangoModel.method_calls)
 
     def it_can_save_data_to_the_underlying_model(self):
@@ -436,6 +446,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
     def it_can_delete_the_underlying_model_instance(self):
         DjangoModel = Mock(name="DjangoModel")
         mock_model = Mock()
+        mock_model.id = 1
         DjangoModel.objects.get.return_value = mock_model
 
         manager = BackendManager('django')
@@ -446,9 +457,13 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         # make sure we are working with correct expectations
         eq_(DjangoBackendManager, type(manager))
 
-        # mock the actual document
-        doc = Mock(name="MockDoc", spec=Document)
-        doc._identifier_state.return_value = {"id": 1}
+        class Doc(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = DjangoModel
+
+        doc = Doc({'id': 1})
 
         manager.delete(doc)
 
@@ -474,8 +489,6 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         mock_model.id = 1
         mock_model.get_absolute_url.return_value = "A"
 
-        DjangoModel.objects.get.return_value = mock_model
-
         OtherModel = Mock(name="OtherMock")
         mock1 = Mock()
         mock1.id = 1
@@ -493,6 +506,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             return x.pop()
 
         OtherModel.objects.get.side_effect = mock_side_effect
+        DjangoModel.objects.get.return_value = mock_model
 
         # Now create a simple document setup
         class OtherDoc(Document):
@@ -502,8 +516,10 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
                 identifier = 'id'
                 model = OtherModel
 
-        class OtherCollection(Collection):
-            document = OtherDoc
+        OtherCollection = Mock()
+        OtherCollection.document = OtherDoc
+        mock_col = OtherCollection.return_value
+        mock_col.document = OtherDoc
 
         class Doc(Document):
             id = fields.NumberField()
@@ -521,29 +537,13 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         # make sure we are working with correct expectations
         eq_(DjangoBackendManager, type(manager))
 
-        doc = Doc()
-        doc.fetch()
+        doc = Doc({'id': 1})
+        #doc.fetch()
 
         expected = {
-                "id": 1,
-                "link": {
-                    "rel": "self",
-                    "href": "A"
-                    },
-                "others": [
-                    {
-                    "rel": "item",
-                    "href": "1",
-                    "id": 1
-                    },
-                    {
-                    "rel": "item",
-                    "href": "2",
-                    "id": 2
-                    }]
-            }
-
-        eq_(expected, doc._prepare_render())
+                'id': 1,
+                'others': mock_col}
+        eq_(expected, manager.fetch(doc))
 
     def it_saves_collections_as_m2m_relations(self):
         # prepare the app structure

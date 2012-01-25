@@ -253,9 +253,9 @@ class Document(object):
                         'href': elem.uri()}
             elif isinstance(field, CollectionField):
                 f = field
-                if hasattr(self, "fetch_%s_field" % field.name):
-                    fetch_fun = getattr(self, "fetch_%s_field" % field.name)
-                    f.name = fetch_fun()
+                #if hasattr(self, "fetch_%s_field" % field.name):
+                #    fetch_fun = getattr(self, "fetch_%s_field" % field.name)
+                #    f.name = fetch_fun()
                 collection = self._backend_manager._get_collection(f)
                 data[field.name] = collection._prepare_render()
             else:
@@ -293,67 +293,9 @@ class Document(object):
         # Retrieve the object from the backend
         obj = self._backend_manager.fetch(self, **kwargs)
 
-        if self._meta.backend_type in 'http':
-            # we assume to get a python dict back
-            #FIXME: Add exception in case its not a list
-            if not isinstance(obj, dict):
-                return
-
-            # store the fetched python dict
-            self._meta._backend_instance = obj
-
-            # flag the document as bound
-            #FIXME: Set maybe also a timestamp for cache expire
-            #self.is_bound = True
-
-            # iterate over the fields, and query the python dict
-            for field in self._meta.local_fields:
-                if not field.name in obj:
-                    # The field is not in the dict (optional?)
-                    continue
-                value = obj[field.name]
-                if isinstance(value, dict):
-                    # assume a foreign document
-                    Document = field.Document
-                    #TODO:Need some recursion to nest the foreign documents
-                    doc = Document(value)
-                    setattr(self, field.name, doc)
-                elif isinstance(value, list):
-                    # assume a m2m/collection
-                    Collection = field.Collection
-                    collection = Collection()
-                    for item in value:
-                        doc = collection.document(item)
-                        collection.add(doc)
-                    setattr(self, field.name, collection)
-                else:
-                    setattr(self, field.name, value)
-
-            # Make sure the django part gets executed
-            return
-
-        self._meta.model_instance = obj
-
-        for field in self._meta.local_fields:
-            if hasattr(self, "fetch_%s_field" % field.name):
-                # If the document provides a fetch method for this field, use
-                # that one
-                fetch_field = getattr(self, "fetch_%s_field" % field.name)
-                setattr(self, field.name, fetch_field())
-            elif isinstance(field, ForeignDocument):
-                # retrieve the related document
-                kwargs = {}
-                related_instance = getattr(obj, field.name)
-                Document = field.Document
-                for identifier in Document._meta.identifier:
-                    kwargs[identifier] = getattr(related_instance, identifier)
-                document = Document(kwargs)
-                document.fetch()
-                setattr(self, field.name, document)
-            elif hasattr(obj, field.name):
-                # Otherwise set the value of the field from the retrieved model
-                # object
-                setattr(self, field.name, getattr(obj, field.name))
+        # Update the document
+        for k, v in obj.iteritems():
+            setattr(self, k, v)
 
     def delete(self, **kwargs):
         """Delete a model instance associated with this document."""

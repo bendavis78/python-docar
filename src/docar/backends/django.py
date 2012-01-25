@@ -62,8 +62,8 @@ class DjangoBackendManager(object):
 
         self.instance = instance
 
-        return instance
-        #return self._model_to_document_dict(document)
+        #return instance
+        return self._model_to_document_dict(document)
 
     def save(self, document):
         select_dict = document._identifier_state()
@@ -82,11 +82,12 @@ class DjangoBackendManager(object):
                 # model
                 doc = getattr(document, field.name)
                 try:
-                    instance = doc.fetch()
+                    doc.fetch()
                 except BackendDoesNotExist:
                     #FIXME: make sure it doesn't throw an exception
                     doc.save()
-                    instance = doc._backend_manager.instance
+
+                instance = doc._backend_manager.instance
                 select_dict[field.name] = instance
             # Add the value to the select_dict only if its not None
             elif getattr(document, field.name) or field.default == False:
@@ -110,15 +111,15 @@ class DjangoBackendManager(object):
 
         self.instance = instance
 
-    def delete(self, document):
+    def delete(self, document, **kwargs):
         try:
             # First try to retrieve the existing model if it exists
-            instance = self.fetch(document)
+            self.fetch(document)
         except BackendDoesNotExist:
             # In case the model does not exist, we do nothing
             return
 
-        instance.delete()
+        self.instance.delete()
 
     def uri(self):
         return self.instance.get_absolute_url()
