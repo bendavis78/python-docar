@@ -184,7 +184,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
         eq_(expected, doc._identifier_state())
 
-    def it_can_provide_a_render_field_for_a_field(self):
+    def it_can_provide_a_overwrite_field_for_its_state_processing(self):
         Model = Mock()
 
         class Doc(Document):
@@ -195,14 +195,20 @@ class when_a_document_gets_instantiated(unittest.TestCase):
                 model = Model
 
             def render_name_field(self):
-                return "something"
+                return "render_field"
+
+            def save_name_field(self):
+                return "save_field"
+
+            def fetch_name_field(self):
+                return "fetch_field"
 
             def uri(self):
                 # specify this function, otherwise we have to make a more
                 # complicated mocked model
                 return "http://location"
 
-        expected = {"id": 1, "name": "something", "link":
+        expected = {"id": 1, "name": "render_field", "link":
                 {"rel": "self", "href": "http://location"}
                 }
 
@@ -210,6 +216,13 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
         eq_("name", doc.name)
         eq_(expected, doc._prepare_render())
+
+        expected['name'] = "save_field"
+        del(expected['link'])
+        eq_(expected, doc._prepare_save())
+
+        expected['name'] = "fetch_field"
+        eq_(expected, doc._prepare_fetch())
 
     def it_can_fetch_its_state_from_the_model_backend(self):
         doc1 = Article({'id': 1})
@@ -544,44 +557,6 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
         doc = Other(message)
         ok_(isinstance(doc.doc, Doc))
 
-    def it_can_map_the_relation_on_model_level_upon_creation(self):
-        #This needs more thinking before proceeding
-        #FIXME: This test should move into the model_tests
-        raise SkipTest
-        DjangoModel = Mock(name='DjangoModel')
-
-        mock_model = Mock()
-        mock_model.id = 34
-        DjangoModel.objects.get.return_value = mock_model
-
-        class Doc(Document):
-            id = fields.NumberField()
-
-            class Meta:
-                model = DjangoModel
-
-        OtherModel = Mock(name='OtherModel')
-        OtherModel.DoesNotExist = Exception
-        OtherModel.objects.get.side_effect = OtherModel.DoesNotExist
-
-        class Other(Document):
-            id = fields.NumberField()
-            doc = fields.ForeignDocument(Doc)
-
-            class Meta:
-                model = OtherModel
-
-        message = {
-                "id": 1,
-                "doc": 34
-                }
-
-        doc = Other(message)
-        doc.save()
-
-        eq_(True, DjangoModel.objects.get.called)
-        DjangoModel.objects.get.assert_called_once_with(id=34)
-
 
 class when_a_document_contains_a_collection_field(unittest.TestCase):
     def it_sets_the_collection_as_attribute_for_the_field(self):
@@ -667,6 +642,7 @@ class when_a_document_field_cant_be_mapped_to_a_model(unittest.TestCase):
         eq_("Hello World", doc.name)
 
         # Now also save the document to the model, make sure the save overwrite
-        # method is used. The save method of backend_manager calls _save_state.
-        doc._save_state()
+        # method is used. The save method of backend_manager calls
+        # ``_prepare_save``.
+        doc._prepare_save()
         eq_(True, doc.save_name_field.called)

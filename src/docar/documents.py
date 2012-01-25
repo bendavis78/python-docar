@@ -182,7 +182,30 @@ class Document(object):
 
         return data
 
-    def _save_state(self):
+    def _prepare_fetch(self):
+        """Create a dict with the document state, and apply all
+        ``fetch_FIELD_field`` methods."""
+        #FIXME: Handle the fact if the document is not mapped to a model
+        data = {}
+
+        # populate the data_dict with the documents state
+        for field in self._meta.local_fields:
+            if hasattr(self, "fetch_%s_field" % field.name):
+                # We have a fetch method for this field
+                fetch_field = getattr(self, "fetch_%s_field" % field.name)
+                data[field.name] = fetch_field()
+
+                # skip to the next iteration
+                continue
+
+            # No save method has been provided, lets map the fields one to one.
+            data[field.name] = getattr(self, field.name)
+
+        return data
+
+    def _prepare_save(self):
+        """Create a dict with the document state, and apply all
+        ``save_FIELD_field`` methods."""
         #FIXME: Handle the fact if the document is not mapped to a model
         data = {}
 
@@ -229,7 +252,11 @@ class Document(object):
                         'rel': 'related',
                         'href': elem.uri()}
             elif isinstance(field, CollectionField):
-                collection = self._backend_manager._get_collection(field)
+                f = field
+                if hasattr(self, "fetch_%s_field" % field.name):
+                    fetch_fun = getattr(self, "fetch_%s_field" % field.name)
+                    f.name = fetch_fun()
+                collection = self._backend_manager._get_collection(f)
                 data[field.name] = collection._prepare_render()
             else:
                 data[field.name] = getattr(self, field.name)
@@ -331,7 +358,7 @@ class Document(object):
     def delete(self, **kwargs):
         """Delete a model instance associated with this document."""
         #self._backend_manager.delete(self._meta.identifier,
-        #        **self._save_state())
+        #        **self._prepare_save())
         self._backend_manager.delete(self, **kwargs)
 
     def uri(self):

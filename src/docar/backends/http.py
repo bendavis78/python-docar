@@ -21,7 +21,7 @@ class HttpBackendManager(object):
             return {}
 
     def save(self, document, *args, **kwargs):
-        data = json.dumps(document._save_state())
+        data = json.dumps(document._prepare_save())
         # first make a GET request to see if the resource exists
         if not hasattr(self, 'response'):
             self.fetch(document, *args, **kwargs)
