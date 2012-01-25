@@ -1,19 +1,41 @@
 from docar.exceptions import BackendDoesNotExist
+from docar.fields import ForeignDocument, CollectionField
 
 
 class DjangoBackendManager(object):
     backend_type = 'django'
 
-    def fetch(self, document, **kwargs):
-        state = document._identifier_state()
-        try:
-            instance = self._model.objects.get(**state)
-        except self._model.DoesNotExist:
-            raise BackendDoesNotExist("Fetch failed for %s" % str(self._model))
+    def _model_to_document_dict(self, document):
+        instance = self.instance
+        data = {}
+        for field in document._meta.local_fields:
+            if not hasattr(instance, field.name):
+                # The instance has no value for this field
+                data[field.name] = None
+                continue
+            if hasattr(document, "fetch_%s_field" % field.name):
+                # We map the fieldname of the backend instance to the fieldname
+                # of the document.
+                fetch_field = getattr(document, "fetch_%s_field" % field.name)
+                # just create a new field on the instance itself
+                setattr(instance, field.name, getattr(instance, fetch_field()))
+            if isinstance(field, ForeignDocument):
+                kwargs = {}
+                related_instance = getattr(instance, field.name)
+                Document = field.Document
+                for identifier in Document._meta.identifier:
+                    kwargs[identifier] = getattr(related_instance, identifier)
+                doc = Document(kwargs)
+                #document.fetch()
+                data[field.name] = doc
+            elif isinstance(field, CollectionField):
+                data[field.name] = self._get_collection(field)
+            elif hasattr(instance, field.name):
+                # Otherwise set the value of the field from the retrieved model
+                # object
+                data[field.name] = getattr(instance, field.name)
 
-        self.instance = instance
-
-        return instance
+        return data
 
     def _get_collection(self, field):
         # FIXME: This relies on the fact that fetch has been called already
@@ -31,12 +53,24 @@ class DjangoBackendManager(object):
             collection.add(doc)
         return collection
 
+    def fetch(self, document, **kwargs):
+        state = document._identifier_state()
+        try:
+            instance = self._model.objects.get(**state)
+        except self._model.DoesNotExist:
+            raise BackendDoesNotExist("Fetch failed for %s" % str(self._model))
+
+        self.instance = instance
+
+        return instance
+        #return self._model_to_document_dict(document)
+
     def save(self, document):
         select_dict = document._identifier_state()
         m2m_relations = []
 
         # we run this method to make sure we catch all save_FIELD_field methods
-        doc_state = document._save_state()
+        doc_state = document._prepare_save()
 
         for field in document._meta.local_fields:
             if hasattr(field, 'Collection'):
@@ -72,7 +106,7 @@ class DjangoBackendManager(object):
             for doc in item[1].collection_set:
                 # FIXME: Replace get_or_create with a more fine grained control
                 # to be able to retrieve instances only with the identifier?
-                m2m.get_or_create(**doc._save_state())
+                m2m.get_or_create(**doc._prepare_save())
 
         self.instance = instance
 

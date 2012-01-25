@@ -320,6 +320,67 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             eq_(True, mock_manager.save.called)
             eq_(True, mock_manager.delete.called)
 
+    def it_returns_a_dict_representation_of_the_instance(self):
+        Doc2Model = Mock(name="Doc2Model")
+        mock_doc2_model = Mock(name="mock_model_instance",
+                spec_set=['name', 'choice', 'related', 'coll', 'nonexistent',
+                    'overwrite', 'overwritten'])
+        mock_related = Mock()
+        mock_related.name = 'related name'
+        mock_m2m = Mock(name="mock_m2m")
+        # return an empty list to have an iterator
+        mock_m2m.all.return_value = []
+
+        mock_doc2_model.name = "value"
+        mock_doc2_model.choice = "True"
+        mock_doc2_model.related = mock_related
+        mock_doc2_model.coll = mock_m2m
+        # the following instance field will be ingored but the to_dict method.
+        mock_doc2_model.nonexistent = "whatever"
+        # The following field will get overwritten
+        mock_doc2_model.overwritten = 'jaja'
+
+        Doc2Model.objects.get.return_value = mock_doc2_model
+
+        Doc = Mock(spec_set=Document)
+        Doc._meta.identifier = ['name']
+        Coll = Mock(spec="Collection")
+
+        class Doc2(Document):
+            name = fields.StringField()
+            choice = fields.BooleanField()
+            related = fields.ForeignDocument(Doc)
+            coll = fields.CollectionField(Coll)
+            skipped = fields.NumberField()
+            overwrite = fields.StringField()
+
+            class Meta:
+                model = Doc2Model
+                identifier = 'name'
+
+            def fetch_overwrite_field(self):
+                return 'overwritten'
+
+        mock_doc = Mock(spec_set=Document)
+        mock_doc._meta = Mock()
+        mock_doc._meta.identifier = []
+        mock_coll = Mock(name="Collection")
+        mock_doc = Doc.return_value
+        mock_coll = Coll.return_value
+
+        expected = {
+                'name': 'value',
+                'choice': 'True',
+                'related': mock_doc,
+                'coll': mock_coll,
+                'skipped': None,
+                'overwrite': 'jaja'
+                }
+        doc = Doc2({'name': 'value'})
+        doc._backend_manager.instance = mock_doc2_model
+
+        eq_(expected, doc._backend_manager._model_to_document_dict(doc))
+
     def it_can_fetch_data_from_the_underlying_model(self):
         DjangoModel = Mock(name="DjangoModel")
         mock_model = Mock()
@@ -337,7 +398,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         doc._context = {}
         doc._meta.identifier = ["id"]
         doc._identifier_state.return_value = {"id": 1}
-        doc._save_state.return_value = {"id": 1}
+        doc._prepare_save.return_value = {"id": 1}
         doc._meta.local_fields = [field]
 
         # make sure we are working with correct expectations
@@ -365,7 +426,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         doc._context = {}
         doc._meta.identifier = ["id"]
         doc._identifier_state.return_value = {"id": 1}
-        doc._save_state.return_value = {"id": 1}
+        doc._prepare_save.return_value = {"id": 1}
         doc._meta.local_fields = [field]
 
         # the manager.save() method doesn't return on success
