@@ -249,12 +249,8 @@ class Document(object):
                         'rel': 'related',
                         'href': elem.uri()}
             elif isinstance(field, CollectionField):
-                f = field
-                #if hasattr(self, "fetch_%s_field" % field.name):
-                #    fetch_fun = getattr(self, "fetch_%s_field" % field.name)
-                #    f.name = fetch_fun()
-                collection = self._backend_manager._get_collection(f)
-                data[field.name] = collection._prepare_render()
+                attr = getattr(self, field.name)
+                data[field.name] = attr._prepare_render()
             else:
                 data[field.name] = getattr(self, field.name)
         # update the data dict with the related fields

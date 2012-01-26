@@ -9,16 +9,16 @@ class DjangoBackendManager(object):
         instance = self.instance
         data = {}
         for field in document._meta.local_fields:
-            if not hasattr(instance, field.name):
-                # The instance has no value for this field
-                data[field.name] = None
-                continue
             if hasattr(document, "fetch_%s_field" % field.name):
                 # We map the fieldname of the backend instance to the fieldname
                 # of the document.
                 fetch_field = getattr(document, "fetch_%s_field" % field.name)
                 # just create a new field on the instance itself
                 setattr(instance, field.name, getattr(instance, fetch_field()))
+            if not hasattr(instance, field.name):
+                # The instance has no value for this field
+                data[field.name] = None
+                continue
             if isinstance(field, ForeignDocument):
                 kwargs = {}
                 related_instance = getattr(instance, field.name)
@@ -26,7 +26,9 @@ class DjangoBackendManager(object):
                 for identifier in Document._meta.identifier:
                     kwargs[identifier] = getattr(related_instance, identifier)
                 doc = Document(kwargs)
-                #document.fetch()
+                # To avoid a new fetch, set the instance manualy, needed for
+                # the uri method
+                doc._backend_manager.instance = related_instance
                 data[field.name] = doc
             elif isinstance(field, CollectionField):
                 data[field.name] = self._get_collection(field)
@@ -46,18 +48,21 @@ class DjangoBackendManager(object):
 
         # create a document for each item in the m2m relation
         relation = getattr(instance, field.name)
+
         for item in relation.all():
-            doc = collection.document()
-            for elem in doc._meta.identifier:
-                setattr(doc, elem, getattr(item, elem))
+            select_dict = {}
+            for elem in collection.document._meta.identifier:
+                select_dict[elem] = getattr(item, elem)
+            doc = collection.document(select_dict)
             collection.add(doc)
         return collection
 
     def fetch(self, document, **kwargs):
-        doc_state = document._identifier_state()
-        doc_state.update(document._context)
+        select_dict = document._identifier_state()
+        select_dict.update(document._context)
+
         try:
-            instance = self._model.objects.get(**doc_state)
+            instance = self._model.objects.get(**select_dict)
         except self._model.DoesNotExist:
             raise BackendDoesNotExist("Fetch failed for %s" % str(self._model))
 

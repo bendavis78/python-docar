@@ -50,6 +50,7 @@ class Collection(object):
         data = []
         for document in self.collection_set:
             item = {"rel": "item"}
+
             document.fetch()
             item["href"] = document.uri()
             for elem in document._meta.identifier:
