@@ -441,7 +441,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
 
         # the manager.save() method doesn't return on success
         manager.save(doc)
-        eq_([('objects.get_or_create', {'id': 1})], DjangoModel.method_calls)
+        eq_([('objects.get', {'id': 1})], DjangoModel.method_calls)
 
     def it_can_delete_the_underlying_model_instance(self):
         DjangoModel = Mock(name="DjangoModel")
@@ -583,15 +583,15 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         mock_doc1_1 = Mock(name="mock_doc1_1")
         mock_doc1_2 = Mock(name="mock_doc1_2")
 
-        Doc2Model.objects.get_or_create.return_value = (mock_doc2, False)
+        Doc2Model.objects.get.return_value = mock_doc2
 
-        collection_model = [(mock_doc1_2,), (mock_doc1_1,)]
+        collection_model = [mock_doc1_2, mock_doc1_1]
 
         def se(*args, **kwargs):
             return collection_model.pop()
 
         mock_doc2.col = Mock()
-        mock_doc2.col.get_or_create.side_effect = se
+        mock_doc2.col.get.side_effect = se
 
         doc = Doc2(request)
 
@@ -600,9 +600,8 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         doc.save()
 
         eq_(True, mock_doc2.col.get_or_create.called)
-        eq_(True, Doc2Model.objects.get_or_create.called)
-        Doc2Model.objects.get_or_create.assert_called_once_with(id=1,
-                bool=False)
+        eq_(True, Doc2Model.objects.get.called)
+        Doc2Model.objects.get.assert_called_once_with(id=1)
 
     def it_supplies_the_foreign_model_instance_when_saving_a_foreign_key(self):
         # prepare the app structure
@@ -689,8 +688,8 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         # The fetch for the foreign document will raise a BackendDoesNotExist
         # and therefore creates a new model instance
         Doc1Model.objects.get.side_effect = Doc1Model.DoesNotExist
-        Doc1Model.objects.get_or_create.return_value = (mock_doc1, True)
-        Doc2Model.objects.get_or_create.return_value = (mock_doc2, True)
+        Doc1Model.objects.get.return_value = mock_doc1
+        Doc2Model.objects.get.return_value = mock_doc2
 
         request = {
                 "id": 2,
@@ -704,7 +703,8 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         doc = Doc2(request, context=context)
         doc.save()
 
-        Doc1Model.objects.get_or_create.assert_called_once_with(id=1,
+        eq_([('objects.get', {'id': 1, 'name': 'hello'}),
+            ('objects.get', {'id': 1, 'name': 'hello'})
+            ], Doc1Model.method_calls)
+        Doc2Model.objects.get.assert_called_once_with(id=2,
                 name='hello')
-        Doc2Model.objects.get_or_create.assert_called_once_with(id=2,
-                name='hello', doc1=mock_doc1)

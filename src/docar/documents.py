@@ -215,12 +215,9 @@ class Document(object):
                 # We have a save method for this field
                 save_field = getattr(self, "save_%s_field" % field.name)
                 data[field.name] = save_field()
-
-                # skip to the next iteration
-                continue
-
-            # No save method has been provided, lets map the fields one to one.
-            data[field.name] = getattr(self, field.name)
+            else:
+                # no save or fetch method found, map the field 1-1
+                data[field.name] = getattr(self, field.name)
 
         return data
 

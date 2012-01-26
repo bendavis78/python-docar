@@ -54,9 +54,10 @@ class DjangoBackendManager(object):
         return collection
 
     def fetch(self, document, **kwargs):
-        state = document._identifier_state()
+        doc_state = document._identifier_state()
+        doc_state.update(document._context)
         try:
-            instance = self._model.objects.get(**state)
+            instance = self._model.objects.get(**doc_state)
         except self._model.DoesNotExist:
             raise BackendDoesNotExist("Fetch failed for %s" % str(self._model))
 
@@ -65,18 +66,26 @@ class DjangoBackendManager(object):
         #return instance
         return self._model_to_document_dict(document)
 
-    def save(self, document):
-        select_dict = document._identifier_state()
+    def save(self, document, **kwargs):
+        #select_dict = document._identifier_state()
         m2m_relations = []
 
         # we run this method to make sure we catch all save_FIELD_field methods
         doc_state = document._prepare_save()
 
+        # we defere the collections to later and replace foreign documents with
+        # foreign related model instances
         for field in document._meta.local_fields:
+            if hasattr(document, "fetch_%s_field" % field.name):
+                # we map the attribute name
+                fetch_field = getattr(document, "fetch_%s_field" % field.name)
+                doc_state[fetch_field()] = getattr(document, field.name)
+                field.name = fetch_field()
+                setattr(document, field.name, doc_state[field.name])
             if hasattr(field, 'Collection'):
+                # we defere m2m relationships to later
                 m2m_relations.append((field, getattr(document, field.name)))
-                # we deal with collections later
-                break
+                del(doc_state[field.name])
             elif hasattr(field, 'Document'):
                 # a foreign document means we have to retrieve it from the
                 # model
@@ -88,26 +97,37 @@ class DjangoBackendManager(object):
                     doc.save()
 
                 instance = doc._backend_manager.instance
-                select_dict[field.name] = instance
-            # Add the value to the select_dict only if its not None
-            elif getattr(document, field.name) or field.default == False:
-                # update the dict with the value from the document state
-                select_dict[field.name] = doc_state[field.name]
+                doc_state[field.name] = instance
 
         # add the additional context in retrieving the model instance
+        doc_state.update(document._context)
+        select_dict = document._identifier_state()
         select_dict.update(document._context)
 
         # First try to retrieve the existing model if it exists
-        instance, created = self._model.objects.get_or_create(**select_dict)
-        #instance.save()
+        try:
+            instance = self._model.objects.get(**select_dict)
+        except self._model.DoesNotExist:
+            # We create a new model instance
+            instance = self._model(**select_dict)
 
-        # instance can be used to set the m2m relations
+        # Set the new state for the model instance
+        for k, v in doc_state.iteritems():
+            setattr(instance, k, v)
+
+        # save the model to the backend
+        #FIXME: Do some exception handling, maybe a full_clean first
+        instance.save()
+
+        # set the m2m relations
         for item in m2m_relations:
             m2m = getattr(instance, item[0].name)
             for doc in item[1].collection_set:
                 # FIXME: Replace get_or_create with a more fine grained control
                 # to be able to retrieve instances only with the identifier?
+                #doc.save()
                 m2m.get_or_create(**doc._prepare_save())
+                #m2m.add(doc._backend_manager.instance)
 
         self.instance = instance
 
