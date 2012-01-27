@@ -88,10 +88,6 @@ class DjangoBackendManager(object):
                 doc_state[fetch_field()] = getattr(document, field.name)
                 field.name = fetch_field()
                 setattr(document, field.name, doc_state[field.name])
-            if field.name not in doc_state:
-                # We have obvioulsy an empty/optional field, skip it for the
-                # greater good.
-                continue
             if hasattr(field, 'Collection'):
                 # we defer m2m relationships to later
                 m2m_relations.append((field, getattr(document, field.name)))

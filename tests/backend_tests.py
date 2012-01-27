@@ -132,10 +132,12 @@ class when_a_http_backend_manager_gets_instantiated(unittest.TestCase):
 
         mock_resp = Mock(name="mock_response")
         expected = {'id': 1}
+        mock_resp.status_code = 200
         mock_resp.content = json.dumps(expected)
 
         self.mock_request.get.return_value = mock_resp
         self.mock_request.delete.return_value = mock_resp
+        self.mock_request.put.return_value = mock_resp
 
         manager = BackendManager('http')
 
@@ -153,6 +155,7 @@ class when_a_http_backend_manager_gets_instantiated(unittest.TestCase):
         # the http manager returns the response as python dict
         content = manager.fetch(doc, username='crito', password='secret')
         manager.delete(doc, username='crito', password='secret')
+        manager.save(doc, username='crito', password='secret')
 
         # make sure we are working with correct expectations
         eq_(HttpBackendManager, type(manager))
@@ -160,7 +163,9 @@ class when_a_http_backend_manager_gets_instantiated(unittest.TestCase):
         ok_(isinstance(content, dict))
         eq_([
             ('get', {'url': doc.uri(), 'auth': auth_token}),
-            ('delete', {'url': doc.uri(), 'auth': auth_token})],
+            ('delete', {'url': doc.uri(), 'auth': auth_token}),
+            ('put', {'url': doc.uri(), 'data': '{"id": 1}',
+                'auth': auth_token})],
                 self.mock_request.method_calls)
 
     def it_can_create_new_remote_resources(self):
@@ -734,6 +739,9 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             class Meta:
                 model = Doc2Model
 
+            def fetch_doc1_field(self):
+                return "doc1_fetch"
+
         class Doc2Collection(Collection):
             document = Doc2
 
@@ -780,16 +788,48 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         mock_doc3.doc2 = Mock()
         mock_doc2 = Mock()
         mock_doc2.id = 2
-        mock_doc2.doc1 = Mock()
+        mock_doc2.doc1_fetch = Mock()
         mock_doc3.doc2.get_or_create.return_value = (mock_doc2, True)
         mock_doc1 = Mock()
         mock_doc1.id = 3
-        mock_doc2.doc1.get_or_create.return_value = (mock_doc1, True)
+        mock_doc2.doc1_fetch.get_or_create.return_value = (mock_doc1, True)
 
         # saving the model should create all nested relations too
         doc3.save()
 
         # make sure the right methods have been called.
-        ok_(mock_doc2.doc1.get_or_create.called)
+        ok_(mock_doc2.doc1_fetch.get_or_create.called)
         ok_(mock_doc3.doc2.get_or_create.called)
         ok_(Doc3Model.called)
+
+    def it_calls_the_fetch_field_method_when_saving(self):
+        DocModel = Mock()
+
+        class Doc(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+
+            class Meta:
+                model = DocModel
+
+            def fetch_name_field(self):
+                return "fetched_name"
+
+        # prepare the django backend
+        DocModel.DoesNotExist = Exception
+        DocModel.objects.get.side_effect = DocModel.DoesNotExist
+        mock_doc = Mock()
+        DocModel.return_value = mock_doc
+
+        # create and save the document
+        doc = Doc({'id': 1, 'name': 'docname'})
+
+        manager = BackendManager()
+        manager._model = DocModel
+        manager.save(doc)
+
+        # The save should have set this attribute on the django model as
+        # defined by the fetch_field method
+        eq_(True, hasattr(mock_doc, 'fetched_name'))
+        # and also have the attribute set to the right value
+        eq_('docname', mock_doc.fetched_name)
