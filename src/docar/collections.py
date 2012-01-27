@@ -20,6 +20,7 @@ class Collection(object):
 
     """
     document = None
+    bound = False
 
     def __init__(self, documents=None):
         if not self.document:
