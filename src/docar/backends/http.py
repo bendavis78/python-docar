@@ -68,8 +68,14 @@ class HttpBackendManager(object):
             return {}
 
     def save(self, document, *args, **kwargs):
-        data = json.dumps(document._prepare_save())
+        params = {}
+        if 'username' in kwargs and 'password' in kwargs:
+            # we enable authentication
+            auth = HTTPBasicAuth(kwargs['username'], kwargs['password'])
+            params['auth'] = auth
 
+        data = json.dumps(document._prepare_save())
+        params['data'] = data
         # fetch the resource if its not yet fetched
         if not hasattr(self, 'response'):
             self.fetch(document, *args, **kwargs)
@@ -79,11 +85,11 @@ class HttpBackendManager(object):
             # we create a new resource
             response = requests.post(
                     url=document.post_uri(),
-                    data=data)
+                    **params)
         elif self.response.status_code == 200:
             response = requests.put(
                     url=document.uri(),
-                    data=data)
+                    **params)
         self.response = response
 
     def delete(self, document, *args, **kwargs):

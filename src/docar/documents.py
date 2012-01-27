@@ -178,11 +178,6 @@ class Document(object):
     def _identifier_state(self):
         data = {}
         for elem in self._meta.identifier:
-            #if hasattr(self, "save_%s_field" % elem):
-            #    # We have a save method for this field
-            #    save_field = getattr(self, "save_%s_field" % elem)
-            #    data[elem] = save_field()
-            #else:
             data[elem] = getattr(self, elem)
 
         return data
@@ -221,7 +216,7 @@ class Document(object):
                 save_field = getattr(self, "save_%s_field" % field.name)
                 data[field.name] = save_field()
             else:
-                # no save or fetch method found, map the field 1-1
+                # no save method found, map the field 1-1
                 data[field.name] = getattr(self, field.name)
 
         return data
@@ -277,19 +272,19 @@ class Document(object):
         """Create a proper python dict that can be further rendered."""
         return self.to_attributes()
 
-    def save(self):
+    def save(self, *args, **kwargs):
         """Save the document in a django model backend."""
-        self._backend_manager.save(self)
+        self._backend_manager.save(self, *args, **kwargs)
 
-    def update(self, data):
+    def update(self, data, *args, **kwargs):
         # FIXME: Handle ForeignDocument relations
-        self.fetch()
+        self.fetch(*args, **kwargs)
         # First update the own document state with the new values
         for k, v in data.iteritems():
             setattr(self, k, v)
 
         # save the representation to the model
-        self.save()
+        self.save(*args, **kwargs)
 
     def fetch(self, **kwargs):
         """Fetch the model from the backend to create the representation of

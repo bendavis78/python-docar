@@ -5,7 +5,7 @@ from docar.fields import ForeignDocument, CollectionField
 class DjangoBackendManager(object):
     backend_type = 'django'
 
-    def _model_to_document_dict(self, document):
+    def _to_dict(self, document):
         instance = self.instance
         data = {}
         for field in document._meta.local_fields:
@@ -71,8 +71,7 @@ class DjangoBackendManager(object):
 
         self.instance = instance
 
-        #return instance
-        return self._model_to_document_dict(document)
+        return self._to_dict(document)
 
     def save(self, document, **kwargs):
         #select_dict = document._identifier_state()
@@ -90,6 +89,10 @@ class DjangoBackendManager(object):
                 doc_state[fetch_field()] = getattr(document, field.name)
                 field.name = fetch_field()
                 setattr(document, field.name, doc_state[field.name])
+            #if not doc_state[field.name] is None:
+            #    # We have an empty, maybe optional field?
+            #    del(doc_state[field.name])
+            #    continue
             if hasattr(field, 'Collection'):
                 # we defere m2m relationships to later
                 m2m_relations.append((field, getattr(document, field.name)))

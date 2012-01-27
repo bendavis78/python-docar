@@ -462,6 +462,7 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
 
             class Meta:
                 model = Doc1Model
+                identifier = 'name'
 
             def uri(self):
                 return 'http://location'
@@ -472,6 +473,7 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
 
             class Meta:
                 model = Doc2Model
+                identifier = 'name'
 
             def uri(self):
                 return 'http://location'
@@ -489,6 +491,7 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
                 'name': 'doc2',
                 'doc1': {
                     'rel': 'related',
+                    'name': 'doc1',
                     'href': 'http://location'
                     },
                 'link': {

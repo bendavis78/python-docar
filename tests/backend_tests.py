@@ -388,7 +388,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         doc = Doc2({'name': 'value'})
         doc._backend_manager.instance = mock_doc2_model
 
-        eq_(expected, doc._backend_manager._model_to_document_dict(doc))
+        eq_(expected, doc._backend_manager._to_dict(doc))
 
     def it_can_fetch_data_from_the_underlying_model(self):
         DjangoModel = Mock(name="DjangoModel")
