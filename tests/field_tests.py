@@ -65,7 +65,6 @@ class when_a_foreign_key_field_gets_instantiated(unittest.TestCase):
         #document = Mock(name="DocumentClass", spec=['id', '_meta'])
 
         eq_(True, hasattr(Klass, 'f'))
-        eq_(True, hasattr(Klass, 'f_id'))
 
 
 class when_a_collection_field_gets_instantiated(unittest.TestCase):

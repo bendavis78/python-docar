@@ -97,7 +97,12 @@ class DocumentBase(type):
         for field in new_class._meta.local_fields:
             if isinstance(field, CollectionField):
                 collection = field.Collection()
+                collection.bound = False
                 setattr(new_class, field.name, collection)
+            elif isinstance(field, ForeignDocument):
+                document = field.Document()
+                document.bound = False
+                setattr(new_class, field.name, document)
             elif field.default == NOT_PROVIDED:
                 setattr(new_class, field.name, None)
             else:
@@ -105,8 +110,8 @@ class DocumentBase(type):
 
         # create the related fields on the instance document
         #FIXME: not sure if thats really needed
-        for field in new_class._meta.related_fields:
-            setattr(new_class, "%s_id" % field.name, None)
+        #for field in new_class._meta.related_fields:
+        #    setattr(new_class, "%s_id" % field.name, None)
 
         # Add the model manager if a model is set
         new_class._backend_manager = BackendManager(
@@ -160,6 +165,10 @@ class Document(object):
                 for item in val:
                     doc = collection.document(item)
                     collection.add(doc)
+                if len(collection.collection_set) > 0:
+                    # If we have at least one member in the collection, we
+                    # regard it as bound
+                    collection.bound = True
                 # set the collection as document attribute
                 setattr(self, field_name, collection)
             elif type(val) == types.DictType:
@@ -171,8 +180,10 @@ class Document(object):
                     # If we didn't find it in the related_fields list, its not
                     # a foreign document, so we ignore this dict field
                     continue
-                # create the appripriate document and set it as an attribute
+                # create the appropriate document and set it as an attribute
                 doc = Document[0](data=val, context=context)
+                # We have a bound foreign document
+                doc.bound = True
                 setattr(self, field_name, doc)
 
     def _identifier_state(self):
@@ -215,6 +226,14 @@ class Document(object):
                 # We have a save method for this field
                 save_field = getattr(self, "save_%s_field" % field.name)
                 data[field.name] = save_field()
+            elif (field.optional is True
+                    and (isinstance(field, ForeignDocument)
+                        or isinstance(field, CollectionField))
+                    and getattr(getattr(self, field.name), 'bound') is False):
+                # The field is optional and not bound, so we ignore it for the
+                # backend state. This should only be done for foreign documents
+                # and collections
+                continue
             else:
                 # no save method found, map the field 1-1
                 data[field.name] = getattr(self, field.name)

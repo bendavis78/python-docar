@@ -74,10 +74,9 @@ class DjangoBackendManager(object):
         return self._to_dict(document)
 
     def save(self, document, **kwargs):
-        #select_dict = document._identifier_state()
         m2m_relations = []
 
-        # we run this method to make sure we catch all save_FIELD_field methods
+        # we call this method to make sure we run all save_FIELD_field methods
         doc_state = document._prepare_save()
 
         # we defere the collections to later and replace foreign documents with
@@ -89,13 +88,14 @@ class DjangoBackendManager(object):
                 doc_state[fetch_field()] = getattr(document, field.name)
                 field.name = fetch_field()
                 setattr(document, field.name, doc_state[field.name])
-            #if not doc_state[field.name] is None:
-            #    # We have an empty, maybe optional field?
-            #    del(doc_state[field.name])
-            #    continue
+            if field.name not in doc_state:
+                # We have obvioulsy an empty/optional field, skip it for the
+                # greater good.
+                continue
             if hasattr(field, 'Collection'):
-                # we defere m2m relationships to later
+                # we defer m2m relationships to later
                 m2m_relations.append((field, getattr(document, field.name)))
+                # and remove it from the state dict to not save it now
                 del(doc_state[field.name])
             elif hasattr(field, 'Document'):
                 # a foreign document means we have to retrieve it from the

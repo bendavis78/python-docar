@@ -531,6 +531,31 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
         doc = Other(message)
         ok_(isinstance(doc.doc, Doc))
 
+    def it_ignores_optional_or_none_type_foreign_documents(self):
+        DjangoModel = Mock()
+
+        class Other(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = DjangoModel
+
+        OtherModel = Mock(name='OtherModel')
+
+        class Doc(Document):
+            id = fields.NumberField()
+            other = fields.ForeignDocument(Other, optional=True)
+
+            class Meta:
+                model = OtherModel
+
+        doc = Doc({'id': 1})
+
+        eq_(True, hasattr(doc._meta.local_fields[1], 'optional'))
+        eq_(True, doc._meta.local_fields[1].optional)
+
+        eq_({'id': 1}, doc._prepare_save())
+
 
 class when_a_document_contains_a_collection_field(unittest.TestCase):
     def it_sets_the_collection_as_attribute_for_the_field(self):
