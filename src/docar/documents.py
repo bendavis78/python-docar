@@ -178,6 +178,11 @@ class Document(object):
     def _identifier_state(self):
         data = {}
         for elem in self._meta.identifier:
+            #if hasattr(self, "save_%s_field" % elem):
+            #    # We have a save method for this field
+            #    save_field = getattr(self, "save_%s_field" % elem)
+            #    data[elem] = save_field()
+            #else:
             data[elem] = getattr(self, elem)
 
         return data
@@ -248,6 +253,12 @@ class Document(object):
                 related[field.name] = {
                         'rel': 'related',
                         'href': elem.uri()}
+                # Also add the identifier fields into the rendered output
+                identifiers = {}
+                for id_field in elem._meta.identifier:
+                    identifiers[id_field] = getattr(elem, id_field)
+                related[field.name].update(identifiers)
+
             elif isinstance(field, CollectionField):
                 attr = getattr(self, field.name)
                 data[field.name] = attr._prepare_render()

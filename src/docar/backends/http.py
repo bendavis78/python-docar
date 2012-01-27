@@ -28,7 +28,9 @@ class HttpBackendManager(object):
                 for identifier in Document._meta.identifier:
                     kwargs[identifier] = related_instance[identifier]
                 doc = Document(kwargs)
-                #document.fetch()
+                # To avoid a new fetch, set the instance manualy, needed for
+                # the uri method
+                doc._backend_manager.instance = related_instance
                 data[field.name] = doc
             elif isinstance(field, CollectionField):
                 related_list = instance[field.name]
@@ -37,13 +39,15 @@ class HttpBackendManager(object):
                     doc = collection.document()
                     for elem in doc._meta.identifier:
                         setattr(doc, elem, item[elem])
+                    # set the instance automaticaly, so that rendering and
+                    # stuff is working okay
+                    doc._backend_manager.instance = item
                     collection.add(doc)
                 data[field.name] = collection
             elif field.name in instance:
                 # Otherwise set the value of the field from the retrieved model
                 # object
                 data[field.name] = instance[field.name]
-
         return data
 
     def fetch(self, document, *args, **kwargs):
