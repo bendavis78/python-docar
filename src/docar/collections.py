@@ -41,6 +41,8 @@ class Collection(object):
             self.collection_set.append(doc)
 
     def fetch_all(self, query_list=[]):
+        # FIXME: Make this a method to run a fetch command on all documents in
+        # the collection set
         for item in query_list:
             doc = self.document(item)
             doc.fetch()
@@ -51,7 +53,10 @@ class Collection(object):
         for document in self.collection_set:
             item = {"rel": "item"}
 
-            document.fetch()
+            #FIXME: Design decision needed, if I enable this, I get into
+            # troubles when rendering related (m2m) instances and they lack the
+            # parent instance as select field.
+            #document.fetch()
             item["href"] = document.uri()
             for elem in document._meta.identifier:
                 item[elem] = getattr(document, elem)

@@ -54,6 +54,9 @@ class DjangoBackendManager(object):
             for elem in collection.document._meta.identifier:
                 select_dict[elem] = getattr(item, elem)
             doc = collection.document(select_dict)
+            # set the instance automaticaly, so that rendering and stuff is
+            # working okay
+            doc._backend_manager.instance = item
             collection.add(doc)
         return collection
 
