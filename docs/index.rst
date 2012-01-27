@@ -16,7 +16,14 @@ as on the client side.
 On the server those messages map to a model. At the moment this means a django
 model, but support for other model mappers is planned. On the client messages
 can be generated and send right away in the form of a HTTP request with the
-builtin client.
+HTTP backend.
+
+* Each message is declared as a python class that subclasses
+  :class:`docar.documents.Document`.
+* Each attribute of the document represents one field in the message.
+* Other documents can be referenced and handled inline.
+* More than one document of the same type are handled in collections.
+* You can reuse the same document declarations and only replace the backend.
 
 A quick example
 ===============
@@ -32,6 +39,7 @@ A quick example
     ...     name = fields.StringField()
     ...
     ...     class Meta:
+    ...         backend_type = 'django'
     ...         model = ArticleModel
 
     >>> # A server example
@@ -81,6 +89,77 @@ A quick example
             "href": "http://example.org/article/1/"
         }
     }]
+
+Documents
+=========
+
+Fields
+======
+
+Documents declare their attributes using fields set as class attributes.
+
+Example
+
+.. code-block:: python
+
+    class Message(Document):
+        id = fields.NumberField()
+        name = fields.StringField()
+
+Field Options
+-------------
+
+``optional``
+~~~~~~~~~~~~
+
+.. attribute:: Field.optional
+
+When set to ``True``, This field can be optional and will be ignored if not set
+to a value. Default is ``False``.
+
+``default``
+~~~~~~~~~~~
+
+.. attribute:: Field.default
+
+Specify a default value for this field. If no value is set by the user, the
+default value is used when interacting with the backend.
+
+Field Types
+-----------
+
+``NumberField``
+~~~~~~~~~~~~~~~
+
+.. class:: NumberField(**options)
+
+``StringField``
+~~~~~~~~~~~~~~~
+
+.. class:: StringField(**options)
+
+``BooleanField``
+~~~~~~~~~~~~~~~~
+
+.. class:: BooleanField(**options)
+
+``StaticField``
+~~~~~~~~~~~~~~~
+
+.. class:: StaticField(**options)
+
+``ForeignDocument``
+~~~~~~~~~~~~~~~~~~~
+
+.. class:: ForeignDocument(**options)
+
+``CollectionField``
+~~~~~~~~~~~~~~~~~~~
+
+.. class:: StaticField(**options)
+
+Collections
+===========
 
 Indices and tables
 ==================
