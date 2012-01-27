@@ -32,6 +32,7 @@ class Collection(object):
             # Add the supplied documents to the collection
             for doc in documents:
                 self.add(doc)
+            self.bound = True
 
     def add(self, doc):
         if not isinstance(doc, Document):
