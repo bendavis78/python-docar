@@ -592,6 +592,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
 
         mock_doc2.col = Mock()
         mock_doc2.col.get.side_effect = se
+        mock_doc2.col.get_or_create.return_value = (True, True)
 
         doc = Doc2(request)
 
@@ -708,3 +709,87 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             ], Doc1Model.method_calls)
         Doc2Model.objects.get.assert_called_once_with(id=2,
                 name='hello')
+
+    def it_can_save_nested_collections_on_the_django_backend(self):
+        # Prepare an environment where you have a collection nesting another
+        # collection
+        Doc1Model = Mock(name="DjangoModel1")
+
+        class Doc1(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = Doc1Model
+
+        class Doc1Collection(Collection):
+            document = Doc1
+
+        Doc2Model = Mock(name="DjangoModel2")
+
+        class Doc2(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+            doc1 = fields.CollectionField(Doc1Collection)
+
+            class Meta:
+                model = Doc2Model
+
+        class Doc2Collection(Collection):
+            document = Doc2
+
+        Doc3Model = Mock(name="DjangoModel3")
+
+        class Doc3(Document):
+            id = fields.NumberField()
+            doc2 = fields.CollectionField(Doc2Collection)
+
+            class Meta:
+                model = Doc3Model
+
+        post_data = {
+                'id': 1,
+                'doc2': [{
+                        'id': 2,
+                        'name': 'miss kitty',
+                        'doc1': [
+                            {'id': 3},
+                            ]
+                        }]
+                }
+
+        # create the document structure
+        doc3 = Doc3(post_data)
+
+        # and verify some expectations
+        ok_(isinstance(doc3.doc2, Doc2Collection))
+        eq_(1, len(doc3.doc2.collection_set))
+        ok_(isinstance(doc3.doc2.collection_set[0], Doc2))
+        temp_doc = doc3.doc2.collection_set[0]
+        eq_('miss kitty', temp_doc.name)
+        ok_(isinstance(temp_doc.doc1, Doc1Collection))
+
+        # Now mock the django backend properly
+        Doc1Model.DoesNotExist = Exception
+        Doc2Model.DoesNotExist = Exception
+        Doc3Model.DoesNotExist = Exception
+
+        Doc3Model.objects.get.side_effect = Doc3Model.DoesNotExist
+        mock_doc3 = Mock(name="Doc3")
+        Doc3Model.return_value = mock_doc3
+        mock_doc3.id = 1
+        mock_doc3.doc2 = Mock()
+        mock_doc2 = Mock()
+        mock_doc2.id = 2
+        mock_doc2.doc1 = Mock()
+        mock_doc3.doc2.get_or_create.return_value = (mock_doc2, True)
+        mock_doc1 = Mock()
+        mock_doc1.id = 3
+        mock_doc2.doc1.get_or_create.return_value = (mock_doc1, True)
+
+        # saving the model should create all nested relations too
+        doc3.save()
+
+        # make sure the right methods have been called.
+        ok_(mock_doc2.doc1.get_or_create.called)
+        ok_(mock_doc3.doc2.get_or_create.called)
+        ok_(Doc3Model.called)

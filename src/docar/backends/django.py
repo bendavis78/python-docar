@@ -124,17 +124,44 @@ class DjangoBackendManager(object):
         #FIXME: Do some exception handling, maybe a full_clean first
         instance.save()
 
-        # set the m2m relations
-        for item in m2m_relations:
-            m2m = getattr(instance, item[0].name)
-            for doc in item[1].collection_set:
-                # FIXME: Replace get_or_create with a more fine grained control
-                # to be able to retrieve instances only with the identifier?
-                #doc.save()
-                m2m.get_or_create(**doc._prepare_save())
-                #m2m.add(doc._backend_manager.instance)
-
         self.instance = instance
+
+        # Save the m2m relations
+        self._save_m2m_relations(instance, m2m_relations)
+
+    def _save_m2m_relations(self, instance, m2m_relations):
+        # set the m2m relations
+        defered_m2m = []
+        for field, collection in m2m_relations:
+            if len(collection.collection_set) < 1:
+                continue
+            m2m = getattr(instance, field.name)
+            for doc in collection.collection_set:
+                doc_state = doc._prepare_save()
+
+                # Iterate all fields of this doc, to defere collections
+                for field in doc._meta.local_fields:
+                    if hasattr(doc, "fetch_%s_field" % field.name):
+                        # we map the attribute name
+                        fetch_field = getattr(doc,
+                                "fetch_%s_field" % field.name)
+                        doc_state[fetch_field()] = getattr(doc, field.name)
+                        del(doc_state[field.name])
+                        field.name = fetch_field()
+                        setattr(doc, field.name, doc_state[field.name])
+                    if hasattr(field, 'Collection'):
+                        # we defere nested m2m relationships to later, filter
+                        # them out here to deal with it on a later point
+                        defered_m2m.append((field, getattr(doc, field.name)))
+                        del(doc_state[field.name])
+
+                # create the relation object
+                #FIXME: Updates probably fail with that one
+                inst, created = m2m.get_or_create(**doc_state)
+
+                # now recursively add the nested collections
+                if len(defered_m2m) > 0:
+                    self._save_m2m_relations(inst, defered_m2m)
 
     def delete(self, document, **kwargs):
         try:
