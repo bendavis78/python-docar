@@ -739,8 +739,8 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             class Meta:
                 model = Doc2Model
 
-            def fetch_doc1_field(self):
-                return "doc1_fetch"
+            def map_doc1_field(self):
+                return "doc1_map"
 
         class Doc2Collection(Collection):
             document = Doc2
@@ -788,17 +788,17 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         mock_doc3.doc2 = Mock()
         mock_doc2 = Mock()
         mock_doc2.id = 2
-        mock_doc2.doc1_fetch = Mock()
+        mock_doc2.doc1_map = Mock()
         mock_doc3.doc2.get_or_create.return_value = (mock_doc2, True)
         mock_doc1 = Mock()
         mock_doc1.id = 3
-        mock_doc2.doc1_fetch.get_or_create.return_value = (mock_doc1, True)
+        mock_doc2.doc1_map.get_or_create.return_value = (mock_doc1, True)
 
         # saving the model should create all nested relations too
         doc3.save()
 
         # make sure the right methods have been called.
-        ok_(mock_doc2.doc1_fetch.get_or_create.called)
+        ok_(mock_doc2.doc1_map.get_or_create.called)
         ok_(mock_doc3.doc2.get_or_create.called)
         ok_(Doc3Model.called)
 
@@ -812,8 +812,8 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             class Meta:
                 model = DocModel
 
-            def fetch_name_field(self):
-                return "fetched_name"
+            def map_name_field(self):
+                return "mapped_name"
 
         # prepare the django backend
         DocModel.DoesNotExist = Exception
@@ -829,7 +829,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         manager.save(doc)
 
         # The save should have set this attribute on the django model as
-        # defined by the fetch_field method
-        eq_(True, hasattr(mock_doc, 'fetched_name'))
+        # defined by the map_field method
+        eq_(True, hasattr(mock_doc, 'mapped_name'))
         # and also have the attribute set to the right value
-        eq_('docname', mock_doc.fetched_name)
+        eq_('docname', mock_doc.mapped_name)

@@ -202,8 +202,8 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             def save_name_field(self):
                 return "save_field"
 
-            def fetch_name_field(self):
-                return "fetch_field"
+            def map_name_field(self):
+                return "map_field"
 
             def uri(self):
                 # specify this function, otherwise we have to make a more
@@ -223,7 +223,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         del(expected['link'])
         eq_(expected, doc._prepare_save())
 
-        expected['name'] = "fetch_field"
+        expected['name'] = "map_field"
         eq_(expected, doc._prepare_fetch())
 
     def it_can_fetch_its_state_from_the_model_backend(self):

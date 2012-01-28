@@ -201,10 +201,10 @@ class Document(object):
 
         # populate the data_dict with the documents state
         for field in self._meta.local_fields:
-            if hasattr(self, "fetch_%s_field" % field.name):
+            if hasattr(self, "map_%s_field" % field.name):
                 # We have a fetch method for this field
-                fetch_field = getattr(self, "fetch_%s_field" % field.name)
-                data[field.name] = fetch_field()
+                map_field = getattr(self, "map_%s_field" % field.name)
+                data[field.name] = map_field()
 
                 # skip to the next iteration
                 continue

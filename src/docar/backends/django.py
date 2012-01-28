@@ -64,6 +64,7 @@ class DjangoBackendManager(object):
         select_dict = document._identifier_state()
         select_dict.update(document._context)
 
+        print select_dict
         try:
             instance = self._model.objects.get(**select_dict)
         except self._model.DoesNotExist:
@@ -82,11 +83,11 @@ class DjangoBackendManager(object):
         # we defere the collections to later and replace foreign documents with
         # foreign related model instances
         for field in document._meta.local_fields:
-            if hasattr(document, "fetch_%s_field" % field.name):
+            if hasattr(document, "map_%s_field" % field.name):
                 # we map the attribute name
-                fetch_field = getattr(document, "fetch_%s_field" % field.name)
-                doc_state[fetch_field()] = getattr(document, field.name)
-                field.name = fetch_field()
+                map_field = getattr(document, "map_%s_field" % field.name)
+                doc_state[map_field()] = getattr(document, field.name)
+                field.name = map_field()
                 setattr(document, field.name, doc_state[field.name])
             if hasattr(field, 'Collection'):
                 # we defer m2m relationships to later
@@ -143,13 +144,13 @@ class DjangoBackendManager(object):
 
                 # Iterate all fields of this doc, to defere collections
                 for field in doc._meta.local_fields:
-                    if hasattr(doc, "fetch_%s_field" % field.name):
+                    if hasattr(doc, "map_%s_field" % field.name):
                         # we map the attribute name
-                        fetch_field = getattr(doc,
-                                "fetch_%s_field" % field.name)
-                        doc_state[fetch_field()] = getattr(doc, field.name)
+                        map_field = getattr(doc,
+                                "map_%s_field" % field.name)
+                        doc_state[map_field()] = getattr(doc, field.name)
                         del(doc_state[field.name])
-                        field.name = fetch_field()
+                        field.name = map_field()
                         setattr(doc, field.name, doc_state[field.name])
                     if hasattr(field, 'Collection'):
                         # we defere nested m2m relationships to later, filter
