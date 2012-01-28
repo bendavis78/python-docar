@@ -10,11 +10,19 @@ class DjangoBackendManager(object):
         data = {}
         for field in document._meta.local_fields:
             if hasattr(document, "fetch_%s_field" % field.name):
+                # we provide a different value, defined in a fetch method for
+                # this field
+                fetch_field = getattr(document, "fetch_%s_field" % field.name)
+                data[field.name] = fetch_field()
+                # this value overrides everything else, so we skip this field
+                # for further processing
+                continue
+            if hasattr(document, "map_%s_field" % field.name):
                 # We map the fieldname of the backend instance to the fieldname
                 # of the document.
-                fetch_field = getattr(document, "fetch_%s_field" % field.name)
+                map_field = getattr(document, "map_%s_field" % field.name)
                 # just create a new field on the instance itself
-                setattr(instance, field.name, getattr(instance, fetch_field()))
+                setattr(instance, field.name, getattr(instance, map_field()))
             if not hasattr(instance, field.name):
                 # The instance has no value for this field
                 data[field.name] = None
@@ -51,12 +59,24 @@ class DjangoBackendManager(object):
 
         for item in relation.all():
             select_dict = {}
+            # we first create an empty document, to have access to the fetch
+            # methods
+            doc = collection.document()
             for elem in collection.document._meta.identifier:
-                select_dict[elem] = getattr(item, elem)
+                if hasattr(doc, "fetch_%s_field" % elem):
+                    fetch_field = getattr(doc, "fetch_%s_field" % elem)
+                    select_dict[elem] = fetch_field()
+                else:
+                    select_dict[elem] = getattr(item, elem)
+            # now we request the actual document, bound to a backend resource
             doc = collection.document(select_dict)
-            # set the instance automaticaly, so that rendering and stuff is
-            # working okay
+            # We dont need to fetch the object again
             doc._backend_manager.instance = item
+            # we shortcut here the fetch mechanism, turn it into a dict
+            # representation on set the attributes correctly
+            obj = doc._backend_manager._to_dict(doc)
+            for k, v in obj.iteritems():
+                setattr(doc, k, v)
             collection.add(doc)
         return collection
 
@@ -64,7 +84,6 @@ class DjangoBackendManager(object):
         select_dict = document._identifier_state()
         select_dict.update(document._context)
 
-        print select_dict
         try:
             instance = self._model.objects.get(**select_dict)
         except self._model.DoesNotExist:

@@ -372,7 +372,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
                 model = Doc2Model
                 identifier = 'name'
 
-            def fetch_overwrite_field(self):
+            def map_overwrite_field(self):
                 return 'overwritten'
 
         mock_doc = Mock(spec_set=Document)

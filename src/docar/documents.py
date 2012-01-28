@@ -189,8 +189,11 @@ class Document(object):
     def _identifier_state(self):
         data = {}
         for elem in self._meta.identifier:
-            data[elem] = getattr(self, elem)
-
+            if hasattr(self, "fetch_%s_field" % elem):
+                fetch_field = getattr(self, "fetch_%s_field" % elem)
+                data[elem] = fetch_field()
+            else:
+                data[elem] = getattr(self, elem)
         return data
 
     def _prepare_fetch(self):
