@@ -33,13 +33,14 @@ class DjangoBackendManager(object):
                 Document = field.Document
                 for identifier in Document._meta.identifier:
                     kwargs[identifier] = getattr(related_instance, identifier)
-                doc = Document(kwargs)
+                doc = Document(kwargs, document._context)
                 # To avoid a new fetch, set the instance manualy, needed for
                 # the uri method
                 doc._backend_manager.instance = related_instance
                 data[field.name] = doc
             elif isinstance(field, CollectionField):
-                data[field.name] = self._get_collection(field)
+                data[field.name] = self._get_collection(field,
+                        context=document._context)
             elif hasattr(instance, field.name):
                 # Otherwise set the value of the field from the retrieved model
                 # object
@@ -47,7 +48,7 @@ class DjangoBackendManager(object):
 
         return data
 
-    def _get_collection(self, field):
+    def _get_collection(self, field, context={}):
         # FIXME: This relies on the fact that fetch has been called already
         instance = self.instance
 
