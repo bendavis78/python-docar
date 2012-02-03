@@ -3,6 +3,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from docar.fields import ForeignDocument, CollectionField
+from docar.exceptions import HttpBackendError
 
 
 class HttpBackendManager(object):
@@ -87,9 +88,14 @@ class HttpBackendManager(object):
             auth = HTTPBasicAuth(kwargs['username'], kwargs['password'])
             params['auth'] = auth
         response = requests.get(url=document.uri(), **params)
+
         self.response = response
 
         # FIXME: check if its a 404, then raise BackendDoesNotExist
+        if (response.status_code > 399) and (response.status_code < 599):
+            # we catch an error
+            raise HttpBackendError(response.status_code,
+                    json.loads(response.content))
         # serialize from json and return a python dict
         if self.response.content:
             self.instance = json.loads(self.response.content)
