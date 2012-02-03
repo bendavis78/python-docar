@@ -18,6 +18,12 @@ class HttpBackendManager(object):
                 fetch_field = getattr(document, "fetch_%s_field" % field.name)
                 # just create a new field on the instance itself
                 instance[field.name] = instance[fetch_field()]
+            if hasattr(document, "map_%s_field" % field.name):
+                # We map the fieldname of the backend instance to the fieldname
+                # of the document.
+                map_field = getattr(document, "map_%s_field" % field.name)
+                # just create a new field on the instance itself
+                instance[field.name], instance[map_field()]
             if not field.name in instance:
                 data[field.name] = None
                 continue
@@ -33,22 +39,46 @@ class HttpBackendManager(object):
                 doc._backend_manager.instance = related_instance
                 data[field.name] = doc
             elif isinstance(field, CollectionField):
-                related_list = instance[field.name]
-                collection = field.Collection()
-                for item in related_list:
-                    doc = collection.document()
-                    for elem in doc._meta.identifier:
-                        setattr(doc, elem, item[elem])
-                    # set the instance automaticaly, so that rendering and
-                    # stuff is working okay
-                    doc._backend_manager.instance = item
-                    collection.add(doc)
-                data[field.name] = collection
+                data[field.name] = self._get_collection(field,
+                        context=document._context)
             elif field.name in instance:
                 # Otherwise set the value of the field from the retrieved model
                 # object
                 data[field.name] = instance[field.name]
         return data
+
+    def _get_collection(self, field, context={}):
+        # FIXME: This relies on the fact that fetch has been called already
+        instance = self.instance
+
+        # create a new collection first
+        collection = field.Collection()
+
+        # create a document for each item in the m2m relation
+        relation = instance[field.name]
+
+        for item in relation:
+            select_dict = {}
+            # we first create an empty document, to have access to the fetch
+            # methods
+            doc = collection.document()
+            for elem in collection.document._meta.identifier:
+                if hasattr(doc, "fetch_%s_field" % elem):
+                    fetch_field = getattr(doc, "fetch_%s_field" % elem)
+                    select_dict[elem] = fetch_field()
+                else:
+                    select_dict[elem] = item[elem]
+            # now we request the actual document, bound to a backend resource
+            doc = collection.document(select_dict)
+            # We dont need to fetch the object again
+            doc._backend_manager.instance = item
+            # we shortcut here the fetch mechanism, turn it into a dict
+            # representation on set the attributes correctly
+            obj = doc._backend_manager._to_dict(doc)
+            for k, v in obj.iteritems():
+                setattr(doc, k, v)
+            collection.add(doc)
+        return collection
 
     def fetch(self, document, *args, **kwargs):
         params = {}
