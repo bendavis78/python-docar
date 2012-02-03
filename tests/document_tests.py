@@ -72,24 +72,6 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_(fields.NumberField, type(self.article._meta.local_fields[0]))
         eq_(fields.StringField, type(self.article._meta.local_fields[1]))
 
-    def it_can_generate_a_uri_from_a_global_setting(self):
-        from docar.state import ENV
-
-        DjangoModel = Mock()
-
-        class Doc(Document):
-            id = fields.NumberField()
-
-            class Meta:
-                model = DjangoModel
-
-            def uri(self):
-                return "%s/%s" % (ENV['uri'], "local")
-
-        ENV['uri'] = 'global'
-        doc = Doc({'id': 1})
-        eq_('global/local', doc.uri())
-
     def it_stores_seperates_lists_for_the_different_types_of_fields(self):
         """The document _meta attribute stores different lists for the
         different types of fields. So that later when saving to the model it

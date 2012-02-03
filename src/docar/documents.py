@@ -247,7 +247,7 @@ class Document(object):
         """Render this document as json."""
         return json.dumps(self._prepare_render())
 
-    def to_attributes(self):
+    def to_python(self):
         """Render this document to a python dictionary."""
         data = {}
         related = {}
@@ -292,7 +292,7 @@ class Document(object):
 
     def _prepare_render(self):
         """Create a proper python dict that can be further rendered."""
-        return self.to_attributes()
+        return self.to_python()
 
     def save(self, *args, **kwargs):
         """Save the document in a django model backend."""
