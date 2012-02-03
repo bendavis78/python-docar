@@ -15,5 +15,7 @@ class CollectionNotBound(Exception):
 
 
 class HttpBackendError(Exception):
-    """A request from the HTTP backend returned a status code >400 and <500."""
+    """A request from the HTTP backend returned a status code >400 and <500.
+    The error is returned as a tuple, the first element gives the status code
+    as an integer, the second error contains the response body."""
     pass

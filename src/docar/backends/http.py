@@ -81,13 +81,21 @@ class HttpBackendManager(object):
             collection.add(doc)
         return collection
 
+    def _get_uri(self, verb, document):
+        if hasattr(document, "%s_uri" % verb):
+            # we found a specific uri method for this verb
+            uri_method = getattr(document, "%s_uri" % verb)
+            return uri_method()
+        else:
+            return document.uri()
+
     def fetch(self, document, *args, **kwargs):
         params = {}
         if 'username' in kwargs and 'password' in kwargs:
             # we enable authentication
             auth = HTTPBasicAuth(kwargs['username'], kwargs['password'])
             params['auth'] = auth
-        response = requests.get(url=document.uri(), **params)
+        response = requests.get(url=self._get_uri('get', document), **params)
 
         self.response = response
 
@@ -95,7 +103,7 @@ class HttpBackendManager(object):
         if (response.status_code > 399) and (response.status_code < 599):
             # we catch an error
             raise HttpBackendError(response.status_code,
-                    json.loads(response.content))
+                    response.content)
         # serialize from json and return a python dict
         if self.response.content:
             self.instance = json.loads(self.response.content)
@@ -112,31 +120,45 @@ class HttpBackendManager(object):
 
         data = json.dumps(document._prepare_save())
         params['data'] = data
-        # fetch the resource if its not yet fetched
-        if not hasattr(self, 'response'):
-            self.fetch(document, *args, **kwargs)
 
-        # If the resource didnt exist, create it, otherwise update it
-        if self.response.status_code == 404:
-            # we create a new resource
-            response = requests.post(
-                    url=document.post_uri(),
-                    **params)
-        elif self.response.status_code == 200:
-            response = requests.put(
-                    url=document.uri(),
-                    **params)
+        # fetch the resource if its not yet fetched. Catch for a backend error,
+        # but do create the resource if the error is a 404 NOT FOUND return
+        # code.
+        if not hasattr(self, 'response'):
+            try:
+                document.fetch(*args, **kwargs)
+            except HttpBackendError as e:
+                if e[0] == 404:
+                    # we create a new resource
+                    response = requests.post(
+                            url=document.post_uri(),
+                            **params)
+                    return
+                else:
+                    # Its some other error, so we just raise it again.
+                    raise e
+        # We update an existing resource
+        response = requests.put(
+                url=self._get_uri('put', document),
+                **params)
+
+        if response.status_code > 399 and \
+                response.status_code < 599:
+            # we catch an error
+            raise HttpBackendError(response.status_code,
+                    response.content)
+
         self.response = response
 
     def delete(self, document, *args, **kwargs):
-        # first make a GET request to see if the resource exists
         params = {}
         if 'username' in kwargs and 'password' in kwargs:
             # we enable authentication
             auth = HTTPBasicAuth(kwargs['username'], kwargs['password'])
             params['auth'] = auth
-        if not hasattr(self, 'response'):
-            self.fetch(document, *args, **kwargs)
+        # first make a GET request to see if the resource exists
+        #if not hasattr(self, 'response'):
+        #    self.fetch(document, *args, **kwargs)
         response = requests.delete(
-                url=document.uri(), **params)
+                url=self._get_uri('delete', document), **params)
         self.response = response
