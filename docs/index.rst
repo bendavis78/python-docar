@@ -93,6 +93,89 @@ A quick example
 Documents
 =========
 
+All documents inherit from the :class:`docar.Document` class. It acts as a
+representation of a resource. A resource maps to a datastructure that is stored
+in a backend, see the section about `Backends`_ for more information. Each
+attribute of the document maps to a field of the resource in the backend.
+
+Document methods
+----------------
+
+A document exposes a simple API:
+
+.. method:: Document.fetch
+
+Fetch the resource from the backend and bind the document to this resource.
+
+.. method:: Document.save
+  
+If the document does not exist on the backend, create it. Otherwise update the
+existing backend with information stored in the current document.
+
+.. method:: Document.delete
+  
+Delete the current resource from the backend.
+
+.. method:: Document.to_python
+  
+Render the document into a python dictionary. The process adds met information
+such as the link to itself to the representation.
+
+.. method:: Document.to_json
+  
+Render the document to a json string. This basically serializes the result from
+:meth:`~Document.to_python`.
+
+``Meta``
+--------
+
+.. class:: Meta
+
+The behaviour of the document can be controlled by setting attributes on the
+document's :class:`Meta` class.
+
+.. code-block:: python
+
+    class Article(Document):
+        id = fields.NumberField()
+        name = fields.StringField()
+
+        class Meta:
+            identifier = 'id'
+
+There are only a few options available at the moment:
+
+.. attribute:: Meta.identifier
+
+Specify the field name, that serves as an unique identifier for this document.
+The field is specified as a simple string. If you want to use more than one
+field as identifiers, write them as a list of strings::
+
+    class Meta:
+        identifier = ['id', 'name']
+
+Every document needs to specify an identifer. Every resource should be uniquely
+selectable by the value of those fields. The default identifier is named ``id``.
+
+.. attribute:: Meta.backend_type
+
+Choose the backend this document should connect to. See the section about
+`Backends`_ below for details. The default backend is the `Django backend`_.
+
+.. attribute:: Meta.model
+
+This option is only useful for documents connecting to the `Django Backend`_.
+It takes a class as argument and specifies which django model use. The argument
+must be a class and **can't** be a string::
+
+    from djangoapp.models import ArticleModel
+
+    class Article(Document):
+        id = fields.NumberField()
+
+        class Meta:
+            model = ArticleModel
+
 Fields
 ======
 
@@ -160,6 +243,15 @@ Field Types
 
 Collections
 ===========
+
+Backends
+========
+
+HTTP Backend
+------------
+
+Django Backend
+--------------
 
 Indices and tables
 ==================
