@@ -19,7 +19,7 @@ can be generated and send right away in the form of a HTTP request with the
 HTTP backend.
 
 * Each message is declared as a python class that subclasses
-  :class:`docar.documents.Document`.
+  :class:`docar.Document`.
 * Each attribute of the document represents one field in the message.
 * Other documents can be referenced and handled inline.
 * More than one document of the same type are handled in collections.
@@ -93,6 +93,8 @@ A quick example
 Documents
 =========
 
+.. class:: docar.Document
+
 All documents inherit from the :class:`docar.Document` class. It acts as a
 representation of a resource. A resource maps to a datastructure that is stored
 in a backend, see the section about `Backends`_ for more information. Each
@@ -125,6 +127,19 @@ such as the link to itself to the representation.
   
 Render the document to a json string. This basically serializes the result from
 :meth:`~Document.to_python`.
+
+.. method:: Document.uri
+
+The :meth:`~Dcoument.uri` method returns the resource identifier of this
+resource. This method needs to be implemented by the user. It is used to
+render the link to itself. The return value of this method should always be the
+full location of the resource as a string::
+
+    class Article(Document):
+        id = fields.NumberField()
+
+        def uri(self):
+            return "http://location/articles/%s/" % self.id
 
 ``Meta``
 --------
@@ -175,6 +190,16 @@ must be a class and **can't** be a string::
 
         class Meta:
             model = ArticleModel
+
+
+
+``fetch_FIELD_field``
+
+``map_FIELD_field``
+
+``render_FIELD_field``
+
+``save_FIELD_field``
 
 Fields
 ======
@@ -247,11 +272,47 @@ Collections
 Backends
 ========
 
+The backends are the real meat of the documents. Where the document defines what
+you can do, the backends implement the how of it. 
+
 HTTP Backend
 ------------
 
+The HTTP backend uses the ``requests`` library to communicate to remote
+backends over HTTP. It assumes currently JSON as exchange protocol. The
+document methods map the following way to the HTTP backend:
+
+- :meth:`~Document.fetch` --> HTTP GET
+- :meth:`~Document.save` --> HTTP POST (on create)
+- :meth:`~Document.save` --> HTTP PUT (on update)
+- :meth:`~Document.delete` --> HTTP DELET
+
+uri methods
+~~~~~~~~~~~
+
+This backend uses the :meth:`~Document.uri` method to determine its API
+endpoint. You can implement specific uri methods for each HTTP verb to be more
+precise. If a http specific uri method is not found, it will fallback to the
+default :meth:`~Document.uri` method. The form of those methods is
+``verb_uri``::
+
+    class Article(Document):
+        id = fields.NumberField()
+
+        def post_uri(self):
+            # Use this method for POST requests
+            return "http://post_location"
+
+        def uri(self):
+            # The default uri location for all other HTTP requests
+            return "http://location"
+
 Django Backend
 --------------
+
+The django backend stores and retrieves resources using the `Django ORM`_.
+
+.. _`Django ORM`: http://djangoproject.org
 
 Indices and tables
 ==================
