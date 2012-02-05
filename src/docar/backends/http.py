@@ -38,6 +38,7 @@ class HttpBackendManager(object):
                 # To avoid a new fetch, set the instance manualy, needed for
                 # the uri method
                 doc._backend_manager.instance = related_instance
+                doc.bound = True
                 data[field.name] = doc
             elif isinstance(field, CollectionField):
                 data[field.name] = self._get_collection(field,
