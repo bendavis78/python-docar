@@ -269,9 +269,12 @@ class Document(object):
                 # skip to the next iteration
                 continue
             elif isinstance(field, ForeignDocument):
-                #FIXME: determine not bound or optional foreign documents
                 # fill the related dict
                 elem = getattr(self, field.name)
+                if not elem.bound and field.optional:
+                    # we don't render foreign documents that are optional and
+                    # not set.
+                    continue
                 related[field.name] = {
                         'rel': 'related',
                         'href': elem.uri()}
