@@ -30,6 +30,13 @@ class DjangoBackendManager(object):
             if isinstance(field, ForeignDocument):
                 kwargs = {}
                 related_instance = getattr(instance, field.name)
+
+                if not related_instance:
+                    # The related instance is not set. We ignore if a related
+                    # instance does not exist otherwise we raise
+                    # model.DoesNotExist exception later on.
+                    continue
+
                 Document = field.Document
                 for identifier in Document._meta.identifier:
                     kwargs[identifier] = getattr(related_instance, identifier)
@@ -37,6 +44,7 @@ class DjangoBackendManager(object):
                 # To avoid a new fetch, set the instance manualy, needed for
                 # the uri method
                 doc._backend_manager.instance = related_instance
+                doc.bound = True
                 data[field.name] = doc
             elif isinstance(field, CollectionField):
                 data[field.name] = self._get_collection(field,
@@ -103,29 +111,37 @@ class DjangoBackendManager(object):
         # we defere the collections to later and replace foreign documents with
         # foreign related model instances
         for field in document._meta.local_fields:
+            # we make a copy of the name, to not interfere with other documents
+            # when saving them
+            name = field.name
             if hasattr(document, "map_%s_field" % field.name):
                 # we map the attribute name
                 map_field = getattr(document, "map_%s_field" % field.name)
                 doc_state[map_field()] = getattr(document, field.name)
-                field.name = map_field()
-                setattr(document, field.name, doc_state[field.name])
+                name = map_field()
+                setattr(document, name, doc_state[name])
             if hasattr(field, 'Collection'):
-                # we defer m2m relationships to later
-                m2m_relations.append((field, getattr(document, field.name)))
+                # we defer m2m relationships to later, we need the field, the
+                # name of the field (after the map() method) and the actual m2m
+                # relation
+                m2m_relations.append((field, name, getattr(document, name)))
                 # and remove it from the state dict to not save it now
-                del(doc_state[field.name])
+                del(doc_state[name])
             elif hasattr(field, 'Document'):
                 # a foreign document means we have to retrieve it from the
                 # model
-                doc = getattr(document, field.name)
-                try:
-                    doc.fetch()
-                except BackendDoesNotExist:
-                    #FIXME: make sure it doesn't throw an exception
-                    doc.save()
+                doc = getattr(document, name)
+                if doc.bound:
+                    # Don't try to save or fetch if the document isn't bound,
+                    # won't do us any good.
+                    try:
+                        doc.fetch()
+                    except BackendDoesNotExist:
+                        #FIXME: make sure it doesn't throw an exception
+                        doc.save()
 
-                instance = doc._backend_manager.instance
-                doc_state[field.name] = instance
+                    instance = doc._backend_manager.instance
+                    doc_state[name] = instance
 
         # add the additional context in retrieving the model instance
         doc_state.update(document._context)
@@ -155,10 +171,10 @@ class DjangoBackendManager(object):
     def _save_m2m_relations(self, instance, m2m_relations):
         # set the m2m relations
         defered_m2m = []
-        for field, collection in m2m_relations:
+        for field, name, collection in m2m_relations:
             if len(collection.collection_set) < 1:
                 continue
-            m2m = getattr(instance, field.name)
+            m2m = getattr(instance, name)
             for doc in collection.collection_set:
                 doc_state = doc._prepare_save()
 

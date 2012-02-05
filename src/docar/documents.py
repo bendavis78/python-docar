@@ -134,11 +134,16 @@ class Document(object):
     """A document is a representation."""
     __metaclass__ = DocumentBase
 
+    _context = {}
+    bound = False
+
     def __init__(self, data=None, context={}):
         """Create a new document presentation of a resource.
 
         :param data: Initial values to use for this document.
         :type data: dict
+        :param context: Add additional context that can be used by the backend.
+        :type context: dict
 
         """
         # Check on the input
