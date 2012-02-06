@@ -257,8 +257,8 @@ class Document(object):
                 data[field.name] = save_field()
             elif (field.optional is True
                     and (isinstance(field, ForeignDocument)
-                        or isinstance(field, CollectionField))
-                    and getattr(getattr(self, field.name), 'bound') is False):
+                        or isinstance(field, CollectionField)
+                    and getattr(getattr(self, field.name), 'bound') is False)):
                 # The field is optional and not bound, so we ignore it for the
                 # backend state. This should only be done for foreign documents
                 # and collections
