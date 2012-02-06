@@ -81,6 +81,11 @@ class ForeignDocument(Field):
     """A reference to another document."""
     def __init__(self, *args, **kwargs):
         self.Document = args[0]
+        if 'inline' in kwargs:
+            self.inline = kwargs['inline']
+            del(kwargs['inline'])
+        else:
+            self.inline = False
         super(ForeignDocument, self).__init__(*args, **kwargs)
 
     def contribute_to_class(self, cls, name):

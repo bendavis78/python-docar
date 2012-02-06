@@ -250,10 +250,20 @@ class Document(object):
 
     def to_json(self):
         """Render this document as json."""
-        return json.dumps(self._prepare_render())
+        return json.dumps(self.to_python())
 
     def to_python(self):
         """Render this document to a python dictionary."""
+        data = self._prepare_render()
+
+        # add the link to itself
+        data['link'] = {
+                'rel': 'self',
+                'href': self.uri()}
+        return data
+
+    def _prepare_render(self):
+        """Create a proper python dict that can be further rendered."""
         data = {}
         related = {}
 
@@ -275,14 +285,18 @@ class Document(object):
                     # we don't render foreign documents that are optional and
                     # not set.
                     continue
-                related[field.name] = {
-                        'rel': 'related',
-                        'href': elem.uri()}
-                # Also add the identifier fields into the rendered output
-                identifiers = {}
-                for id_field in elem._meta.identifier:
-                    identifiers[id_field] = getattr(elem, id_field)
-                related[field.name].update(identifiers)
+                if field.inline:
+                    # we render the field inline
+                    related[field.name] = elem._prepare_render()
+                else:
+                    related[field.name] = {
+                            'rel': 'related',
+                            'href': elem.uri()}
+                    # Also add the identifier fields into the rendered output
+                    identifiers = {}
+                    for id_field in elem._meta.identifier:
+                        identifiers[id_field] = getattr(elem, id_field)
+                    related[field.name].update(identifiers)
 
             elif isinstance(field, CollectionField):
                 attr = getattr(self, field.name)
@@ -292,15 +306,7 @@ class Document(object):
         # update the data dict with the related fields
         data.update(related)
 
-        # add the link to itself
-        data['link'] = {
-                'rel': 'self',
-                'href': self.uri()}
         return data
-
-    def _prepare_render(self):
-        """Create a proper python dict that can be further rendered."""
-        return self.to_python()
 
     def save(self, *args, **kwargs):
         """Save the document in a django model backend."""

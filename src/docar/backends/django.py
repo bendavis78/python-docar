@@ -171,28 +171,30 @@ class DjangoBackendManager(object):
     def _save_m2m_relations(self, instance, m2m_relations):
         # set the m2m relations
         defered_m2m = []
-        for field, name, collection in m2m_relations:
+        for field, local_name, collection in m2m_relations:
             if len(collection.collection_set) < 1:
                 continue
-            m2m = getattr(instance, name)
+            m2m = getattr(instance, local_name)
             for doc in collection.collection_set:
                 doc_state = doc._prepare_save()
 
                 # Iterate all fields of this doc, to defere collections
                 for field in doc._meta.local_fields:
-                    if hasattr(doc, "map_%s_field" % field.name):
+                    defered_name = field.name
+                    if hasattr(doc, "map_%s_field" % defered_name):
                         # we map the attribute name
                         map_field = getattr(doc,
-                                "map_%s_field" % field.name)
-                        doc_state[map_field()] = getattr(doc, field.name)
-                        del(doc_state[field.name])
-                        field.name = map_field()
-                        setattr(doc, field.name, doc_state[field.name])
+                                "map_%s_field" % defered_name)
+                        doc_state[map_field()] = getattr(doc, defered_name)
+                        #del(doc_state[field.name])
+                        defered_name = map_field()
+                        setattr(doc, defered_name, doc_state[defered_name])
                     if hasattr(field, 'Collection'):
                         # we defere nested m2m relationships to later, filter
                         # them out here to deal with it on a later point
-                        defered_m2m.append((field, getattr(doc, field.name)))
-                        del(doc_state[field.name])
+                        defered_m2m.append((field, defered_name, getattr(doc,
+                            defered_name)))
+                        del(doc_state[defered_name])
 
                 # create the relation object
                 #FIXME: Updates probably fail with that one
