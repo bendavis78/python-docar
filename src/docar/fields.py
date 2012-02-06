@@ -6,10 +6,12 @@ class Field(object):
     # This counter is used to keep track of the order of declaration of fields.
     creation_counter = 0
 
-    def __init__(self, default=NOT_PROVIDED, optional=False, context=[]):
+    def __init__(self, default=NOT_PROVIDED, optional=False, context=[],
+            render=True):
         self.default = default
         self.optional = optional
         self.context = context
+        self.render = render
 
         # Set the creation counter. Increment it for each field declaration
         self.creation_counter = Field.creation_counter

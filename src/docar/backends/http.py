@@ -114,12 +114,30 @@ class HttpBackendManager(object):
 
     def save(self, document, *args, **kwargs):
         params = {}
+
         if 'username' in kwargs and 'password' in kwargs:
             # we enable authentication
             auth = HTTPBasicAuth(kwargs['username'], kwargs['password'])
             params['auth'] = auth
 
-        data = json.dumps(document._prepare_save())
+        doc_state = document._prepare_save()
+        for field in document._meta.local_fields:
+            name = field.name
+            if hasattr(document, "map_%s_field" % field.name):
+                # we map the attribute name
+                map_field = getattr(document, "map_%s_field" % field.name)
+                doc_state[map_field()] = getattr(document, field.name)
+                name = map_field()
+                setattr(document, name, doc_state[name])
+            if hasattr(field, 'Collection'):
+                coll = getattr(document, name)
+                doc_state[name] = coll._prepare_render()
+            elif hasattr(field, 'Document'):
+                doc = getattr(document, name)
+                doc_state[name] = doc._prepare_render()
+        print doc_state
+        data = json.dumps(doc_state)
+        print data
         params['data'] = data
 
         # fetch the resource if its not yet fetched. Catch for a backend error,

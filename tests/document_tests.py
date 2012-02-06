@@ -288,6 +288,32 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         doc.fetch()
         eq_(expected, json.loads(doc.to_json()))
 
+    def it_doesnt_render_fields_with_render_option_set_to_false(self):
+        DocModel = Mock(name='DocModel')
+
+        class Doc(Document):
+            id = fields.NumberField()
+            name = fields.StringField(render=False)
+
+            class Meta:
+                model = DocModel
+
+        mock_doc = {'id': 1, 'name': 'name'}
+
+        expected = {'id': 1, 'link': {
+            'rel': 'self',
+            'href': 'link'}}
+        doc = Doc({'id': 1})
+
+        doc._backend_manager = Mock()
+        doc._backend_manager.uri.return_value = "link"
+        doc._backend_manager.fetch.return_value = mock_doc
+
+        doc.fetch()
+
+        # name is set not to render, so don't render it
+        eq_(expected, json.loads(doc.to_json()))
+
     def it_can_supply_extra_context_also_to_its_foreign_documents(self):
         Model1 = Mock()
         Model2 = Mock()

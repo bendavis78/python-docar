@@ -44,6 +44,8 @@ class DjangoBackendManager(object):
                 # To avoid a new fetch, set the instance manualy, needed for
                 # the uri method
                 doc._backend_manager.instance = related_instance
+                #FIXME: There should be no fetch here
+                doc.fetch()
                 doc.bound = True
                 data[field.name] = doc
             elif isinstance(field, CollectionField):

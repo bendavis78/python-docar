@@ -7,7 +7,8 @@ from .fields import ForeignDocument, CollectionField, NOT_PROVIDED
 from .backends import BackendManager
 
 
-DEFAULT_NAMES = ('identifier', 'model', 'excludes', 'backend_type', 'context')
+DEFAULT_NAMES = ('identifier', 'model', 'excludes', 'backend_type', 'context',
+        'render')
 
 
 def clean_meta(Meta):
@@ -35,6 +36,7 @@ class Options(object):
         self.local_fields = []
         self.related_fields = []
         self.collection_fields = []
+        self.render = True
 
         self.meta = meta
 
@@ -291,6 +293,8 @@ class Document(object):
             if field.optional and not getattr(self, field.name):
                 # The field is optional and not set, ignore it
                 continue
+            elif not field.render:
+                continue
             elif hasattr(self, "render_%s_field" % field.name):
                 # We have a render method for this field
                 render_field = getattr(self, "render_%s_field" % field.name)
@@ -306,8 +310,6 @@ class Document(object):
                     continue
                 if field.inline:
                     # we render the field inline
-                    #FIXME: There should be no fetch here
-                    elem.fetch()
                     related[field.name] = elem.to_python()
                 else:
                     related[field.name] = {
