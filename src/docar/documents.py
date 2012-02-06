@@ -306,7 +306,9 @@ class Document(object):
                     continue
                 if field.inline:
                     # we render the field inline
-                    related[field.name] = elem._prepare_render()
+                    #FIXME: There should be no fetch here
+                    elem.fetch()
+                    related[field.name] = elem.to_python()
                 else:
                     related[field.name] = {
                             'rel': 'related',
