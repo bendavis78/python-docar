@@ -40,7 +40,7 @@ class DjangoBackendManager(object):
                 Document = field.Document
                 for identifier in Document._meta.identifier:
                     kwargs[identifier] = getattr(related_instance, identifier)
-                doc = Document(kwargs, document._context)
+                doc = Document(kwargs, document._get_context())
                 # To avoid a new fetch, set the instance manualy, needed for
                 # the uri method
                 doc._backend_manager.instance = related_instance
@@ -48,7 +48,7 @@ class DjangoBackendManager(object):
                 data[field.name] = doc
             elif isinstance(field, CollectionField):
                 data[field.name] = self._get_collection(field,
-                        context=document._context)
+                        context=document._get_context())
             elif hasattr(instance, field.name):
                 # Otherwise set the value of the field from the retrieved model
                 # object
@@ -91,7 +91,7 @@ class DjangoBackendManager(object):
 
     def fetch(self, document, **kwargs):
         select_dict = document._identifier_state()
-        select_dict.update(document._context)
+        select_dict.update(document._get_context())
 
         try:
             instance = self._model.objects.get(**select_dict)
@@ -144,9 +144,9 @@ class DjangoBackendManager(object):
                     doc_state[name] = instance
 
         # add the additional context in retrieving the model instance
-        doc_state.update(document._context)
+        doc_state.update(document._get_context())
         select_dict = document._identifier_state()
-        select_dict.update(document._context)
+        select_dict.update(document._get_context())
 
         # First try to retrieve the existing model if it exists
         try:

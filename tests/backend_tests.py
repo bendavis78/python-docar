@@ -581,6 +581,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         field.name = "id"
         doc.id = 1
         doc._context = {}
+        doc._get_context.return_value = {}
         doc._meta.identifier = ["id"]
         doc._identifier_state.return_value = {"id": 1}
         doc._prepare_save.return_value = {"id": 1}
@@ -609,6 +610,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         field.name = "id"
         doc.id = 1
         doc._context = {}
+        doc._get_context.return_value = {}
         doc._meta.identifier = ["id"]
         doc._identifier_state.return_value = {"id": 1}
         doc._prepare_save.return_value = {"id": 1}
@@ -848,6 +850,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
 
             class Meta:
                 model = Doc1Model
+                context = ['name']
 
         Doc2Model = Mock(name="doc2_model")
 
@@ -857,6 +860,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
 
             class Meta:
                 model = Doc2Model
+                context = ['name']
 
         # First return an existing model instance
         mock_doc1 = Mock()
@@ -1003,3 +1007,49 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         eq_(True, hasattr(mock_doc, 'mapped_name'))
         # and also have the attribute set to the right value
         eq_('docname', mock_doc.mapped_name)
+
+    def it_can_limit_the_choice_of_context_variables_given_to_it(self):
+        Model1 = Mock()
+        Model2 = Mock()
+
+        class Doc1(Document):
+            id = fields.NumberField()
+            name1 = fields.StringField()
+
+            class Meta:
+                model = Model1
+                context = ['name1']
+
+        class Doc2(Document):
+            id = fields.NumberField()
+            name1 = fields.StringField()
+            name2 = fields.StringField()
+            doc1 = fields.ForeignDocument(Doc1)
+
+            class Meta:
+                model = Model2
+                context = ['name1', 'name2']
+
+        # First return an existing model instance
+        mock_doc1 = Mock()
+        mock_doc1.id = 1
+        mock_doc1.name1 = "name1"
+
+        mock_doc2 = Mock()
+        mock_doc2.id = 2
+        mock_doc2.name1 = "name1"
+        mock_doc2.name2 = "name2"
+        mock_doc2.doc1 = mock_doc1
+
+        # The fetch for the foreign document will raise a BackendDoesNotExist
+        # and therefore creates a new model instance
+        Model1.objects.get.return_value = mock_doc1
+        Model2.objects.get.return_value = mock_doc2
+
+        doc2 = Doc2({'id': 1}, context={'name1': 'name1', 'name2': 'name2'})
+        doc2.fetch()
+        doc2.save()
+
+        Model1.objects.get.assert_called_with(id=1, name1="name1")
+        Model2.objects.get.assert_called_with(id=2, name1="name1",
+                name2="name2")

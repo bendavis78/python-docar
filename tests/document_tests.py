@@ -217,7 +217,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         doc = Doc({"id": 1, "name": "name"})
 
         eq_("name", doc.name)
-        eq_(expected, doc._prepare_render())
+        eq_(expected, doc.to_python())
 
         expected['name'] = "save_field"
         del(expected['link'])
@@ -331,6 +331,31 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_([('fetch', (doc,), {'username': 'crito', 'password': 'secret'})],
                 mock_manager.method_calls)
 
+    def it_gives_context_based_on_the_meta_options(self):
+        Model1 = Mock()
+        Model2 = Mock()
+
+        class Doc1(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = Model1
+                context = ['name']
+
+        class Doc2(Document):
+            id = fields.NumberField()
+            doc1 = fields.ForeignDocument(Doc1)
+
+            class Meta:
+                model = Model2
+                context = ['name', 'other']
+
+        doc2 = Doc2({'id': 1, 'doc1': {'id': 2}},
+                context={'name': 'name', 'other': 'other'})
+
+        eq_({'name': 'name', 'other': 'other'}, doc2._get_context())
+        eq_({'name': 'name'}, doc2.doc1._get_context())
+
 
 class when_a_representation_is_parsed(unittest.TestCase):
     def setUp(self):
@@ -381,7 +406,7 @@ class when_a_document_is_bound(unittest.TestCase):
         eq_(json.dumps(BASKET), self.basket.to_json())
 
     def it_can_be_rendered_to_a_python_dictionary(self):
-        eq_(BASKET, self.basket._prepare_render())
+        eq_(BASKET, self.basket.to_python())
 
     def it_can_collect_links(self):
         eq_('http://localhost/basket/1/', self.basket.uri())

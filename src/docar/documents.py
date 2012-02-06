@@ -7,7 +7,7 @@ from .fields import ForeignDocument, CollectionField, NOT_PROVIDED
 from .backends import BackendManager
 
 
-DEFAULT_NAMES = ('identifier', 'model', 'excludes', 'backend_type')
+DEFAULT_NAMES = ('identifier', 'model', 'excludes', 'backend_type', 'context')
 
 
 def clean_meta(Meta):
@@ -31,6 +31,7 @@ class Options(object):
         self.identifier = ['id']
         # FIXME: Do some type checking
         self.excludes = []
+        self.context = []
         self.local_fields = []
         self.related_fields = []
         self.collection_fields = []
@@ -153,6 +154,13 @@ class Document(object):
 
         self._context = context
 
+#        for field in self._meta.related_fields:
+#            # set the correct context on all foreign documents
+#            #FIXME: This proably can't deal wiht nested documents
+#            attr = getattr(self, field.name)
+#            attr._context = context
+#            setattr(self, field.name, attr)
+
         # set the preloaded attributes
         for field_name, val in data.items():
             # We set simple fields, defer references and collections
@@ -200,6 +208,17 @@ class Document(object):
             else:
                 data[elem] = getattr(self, elem)
         return data
+
+    def _get_context(self):
+        if len(self._context) < 1:
+            # If we have no context meta option set, just return it as it is
+            return self._context
+
+        obj = {}
+        for field in self._meta.context:
+            obj[field] = self._context[field]
+
+        return obj
 
     def _prepare_fetch(self):
         """Create a dict with the document state, and apply all
