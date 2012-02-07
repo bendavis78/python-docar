@@ -772,8 +772,9 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             return collection_model.pop()
 
         mock_doc2.col = Mock()
+        mock_doc2.col.__dict__['model'] = Doc1Model
         mock_doc2.col.get.side_effect = se
-        mock_doc2.col.get_or_create.return_value = (True, True)
+        mock_doc2.col.get.return_value = True
 
         doc = Doc2(request)
 
@@ -781,7 +782,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
 
         doc.save()
 
-        eq_(True, mock_doc2.col.get_or_create.called)
+        eq_(True, mock_doc2.col.get.called)
         eq_(True, Doc2Model.objects.get.called)
         Doc2Model.objects.get.assert_called_once_with(id=1)
 
@@ -961,23 +962,29 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
 
         Doc3Model.objects.get.side_effect = Doc3Model.DoesNotExist
         mock_doc3 = Mock(name="Doc3")
-        Doc3Model.return_value = mock_doc3
         mock_doc3.id = 1
         mock_doc3.doc2 = Mock()
+        mock_doc3.doc2.__dict__['model'] = Doc2Model
+        Doc3Model.return_value = mock_doc3
         mock_doc2 = Mock()
+        mock_doc2.__dict__['model'] = Doc2Model
         mock_doc2.id = 2
-        mock_doc2.doc1_map = Mock()
-        mock_doc3.doc2.get_or_create.return_value = (mock_doc2, True)
+        mock_doc2.doc1_map = Mock(name='doc1_map')
+        mock_doc2.doc1_map.__dict__['model'] = Doc1Model
+        mock_doc3.doc2.create.return_value = mock_doc2
+        mock_doc3.doc2.get.return_value = mock_doc2
         mock_doc1 = Mock()
+        mock_doc1.__dict__['model'] = Doc1Model
         mock_doc1.id = 3
-        mock_doc2.doc1_map.get_or_create.return_value = (mock_doc1, True)
+        mock_doc2.doc1_map.get.return_value = mock_doc1
+        mock_doc2.doc1_map.create.return_value = mock_doc1
 
         # saving the model should create all nested relations too
         doc3.save()
 
         # make sure the right methods have been called.
-        ok_(mock_doc2.doc1_map.get_or_create.called)
-        ok_(mock_doc3.doc2.get_or_create.called)
+        ok_(mock_doc2.doc1_map.get.called)
+        ok_(mock_doc3.doc2.get.called)
         ok_(Doc3Model.called)
 
     def it_calls_the_fetch_field_method_when_saving(self):

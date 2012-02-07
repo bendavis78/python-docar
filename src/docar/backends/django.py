@@ -40,7 +40,7 @@ class DjangoBackendManager(object):
                 Document = field.Document
                 for identifier in Document._meta.identifier:
                     kwargs[identifier] = getattr(related_instance, identifier)
-                doc = Document(kwargs, document._get_context())
+                doc = Document(kwargs, document._context)
                 # To avoid a new fetch, set the instance manualy, needed for
                 # the uri method
                 doc._backend_manager.instance = related_instance
