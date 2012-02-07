@@ -318,6 +318,10 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
                 self.mock_request.method_calls)
         eq_('other', doc.name)
 
+    def it_can_construct_correct_json_messages_with_nested_documents(self):
+        class Doc1(Document):
+            id = fields.NumberField()
+
 
 class when_a_http_backend_talks_to_an_api_endpoint(unittest.TestCase):
     def setUp(self):

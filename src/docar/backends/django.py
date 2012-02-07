@@ -188,7 +188,6 @@ class DjangoBackendManager(object):
                         map_field = getattr(doc,
                                 "map_%s_field" % defered_name)
                         doc_state[map_field()] = getattr(doc, defered_name)
-                        #del(doc_state[field.name])
                         defered_name = map_field()
                         setattr(doc, defered_name, doc_state[defered_name])
                     if hasattr(field, 'Collection'):
@@ -198,9 +197,15 @@ class DjangoBackendManager(object):
                             defered_name)))
                         del(doc_state[defered_name])
 
-                # create the relation object
-                #FIXME: Updates probably fail with that one
-                inst, created = m2m.get_or_create(**doc_state)
+                # create or update the relation object
+                model = m2m.__dict__['model']
+                try:
+                    inst = m2m.get(**doc._identifier_state())
+                    for k, v in doc_state.items():
+                        setattr(inst, k, v)
+                    inst.save()
+                except model.DoesNotExist:
+                    inst = m2m.create(**doc_state)
 
                 # now recursively add the nested collections
                 if len(defered_m2m) > 0:

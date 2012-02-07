@@ -24,7 +24,7 @@ class Collection(object):
 
     def __init__(self, documents=None):
         if not self.document:
-            #FIXME: raise and exception, a collection must be bound
+            # A collection must declared for a document
             raise CollectionNotBound
 
         self.collection_set = []
@@ -32,7 +32,6 @@ class Collection(object):
             # Add the supplied documents to the collection
             for doc in documents:
                 self.add(doc)
-            self.bound = True
 
     def add(self, doc):
         if not isinstance(doc, Document):
@@ -41,6 +40,7 @@ class Collection(object):
         else:
             # Append the document
             self.collection_set.append(doc)
+            self.bound = True
 
     def fetch_all(self, query_list=[]):
         # FIXME: Make this a method to run a fetch command on all documents in

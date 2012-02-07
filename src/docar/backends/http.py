@@ -121,8 +121,11 @@ class HttpBackendManager(object):
             params['auth'] = auth
 
         doc_state = document._prepare_save()
+
         for field in document._meta.local_fields:
             name = field.name
+            if field.name not in doc_state:
+                continue
             if hasattr(document, "map_%s_field" % field.name):
                 # we map the attribute name
                 map_field = getattr(document, "map_%s_field" % field.name)
@@ -135,9 +138,8 @@ class HttpBackendManager(object):
             elif hasattr(field, 'Document'):
                 doc = getattr(document, name)
                 doc_state[name] = doc._prepare_render()
-        print doc_state
+
         data = json.dumps(doc_state)
-        print data
         params['data'] = data
 
         # fetch the resource if its not yet fetched. Catch for a backend error,

@@ -156,13 +156,6 @@ class Document(object):
 
         self._context = context
 
-#        for field in self._meta.related_fields:
-#            # set the correct context on all foreign documents
-#            #FIXME: This proably can't deal wiht nested documents
-#            attr = getattr(self, field.name)
-#            attr._context = context
-#            setattr(self, field.name, attr)
-
         # set the preloaded attributes
         for field_name, val in data.items():
             # We set simple fields, defer references and collections
@@ -207,6 +200,9 @@ class Document(object):
             if hasattr(self, "fetch_%s_field" % elem):
                 fetch_field = getattr(self, "fetch_%s_field" % elem)
                 data[elem] = fetch_field()
+            elif hasattr(self, "save_%s_field" % elem):
+                save_field = getattr(self, "save_%s_field" % elem)
+                data[elem] = save_field()
             else:
                 data[elem] = getattr(self, elem)
         return data
@@ -256,12 +252,16 @@ class Document(object):
                 save_field = getattr(self, "save_%s_field" % field.name)
                 data[field.name] = save_field()
             elif (field.optional is True
-                    and (isinstance(field, ForeignDocument)
+                    and isinstance(field, ForeignDocument)
                         or isinstance(field, CollectionField)
-                    and getattr(getattr(self, field.name), 'bound') is False)):
+                    and (getattr(getattr(self, field.name),
+                        'bound') is False)):
                 # The field is optional and not bound, so we ignore it for the
                 # backend state. This should only be done for foreign documents
                 # and collections
+                continue
+            elif isinstance(getattr(self, field.name), type(None)):
+                # We also ignore any field that is set to None
                 continue
             else:
                 # no save method found, map the field 1-1
@@ -331,16 +331,41 @@ class Document(object):
 
         return data
 
+    def _init_from_dict(self, obj):
+        """Set the document state from this dictionary."""
+        for k, v in obj.iteritems():
+            if isinstance(v, dict):
+                # assume a foreign document
+                doc = getattr(self, k)
+                Document = [field.Document
+                        for field in self._meta.related_fields
+                        if field.name in k]
+                if not Document:
+                    # If we didn't find it in the related_fields list, its not
+                    # a foreign document, so we ignore this dict field
+                    continue
+                doc = Document[0](v, context=self._context)
+                setattr(self, k, doc)
+            elif isinstance(v, list):
+                col = getattr(self, k)
+                col.collection_set = []
+                col.bound = False
+                for item in v:
+                    doc = col.document(item, context=self._context)
+                    col.add(doc)
+                setattr(self, k, col)
+            else:
+                setattr(self, k, v)
+
     def save(self, *args, **kwargs):
         """Save the document in a django model backend."""
         self._backend_manager.save(self, *args, **kwargs)
 
     def update(self, data, *args, **kwargs):
-        # FIXME: Handle ForeignDocument relations
         self.fetch(*args, **kwargs)
+
         # First update the own document state with the new values
-        for k, v in data.iteritems():
-            setattr(self, k, v)
+        self._init_from_dict(data)
 
         # save the representation to the model
         self.save(*args, **kwargs)
