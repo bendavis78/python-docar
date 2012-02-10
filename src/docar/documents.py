@@ -251,17 +251,17 @@ class Document(object):
                 # We have a save method for this field
                 save_field = getattr(self, "save_%s_field" % field.name)
                 data[field.name] = save_field()
+            elif isinstance(getattr(self, field.name), type(None)):
+                # We also ignore any field that is set to None
+                continue
             elif (field.optional is True
-                    and isinstance(field, ForeignDocument)
-                        or isinstance(field, CollectionField)
+                    and (isinstance(field, ForeignDocument)
+                        or isinstance(field, CollectionField))
                     and (getattr(getattr(self, field.name),
                         'bound') is False)):
                 # The field is optional and not bound, so we ignore it for the
                 # backend state. This should only be done for foreign documents
                 # and collections
-                continue
-            elif isinstance(getattr(self, field.name), type(None)):
-                # We also ignore any field that is set to None
                 continue
             else:
                 # no save method found, map the field 1-1
@@ -310,7 +310,7 @@ class Document(object):
                     continue
                 if field.inline:
                     # we render the field inline
-                    related[field.name] = elem.to_python()
+                    related[field.name] = elem._prepare_render()
                 else:
                     related[field.name] = {
                             'rel': 'related',
@@ -345,6 +345,8 @@ class Document(object):
                     # a foreign document, so we ignore this dict field
                     continue
                 doc = Document[0](v, context=self._context)
+                doc.bound = True
+                doc._init_from_dict(v)
                 setattr(self, k, doc)
             elif isinstance(v, list):
                 col = getattr(self, k)
@@ -352,6 +354,8 @@ class Document(object):
                 col.bound = False
                 for item in v:
                     doc = col.document(item, context=self._context)
+                    doc.bound = True
+                    doc._init_from_dict(item)
                     col.add(doc)
                 setattr(self, k, col)
             else:
