@@ -136,11 +136,11 @@ class DjangoBackendManager(object):
                 if doc.bound:
                     # Don't try to save or fetch if the document isn't bound,
                     # won't do us any good.
-                    try:
-                        doc.fetch()
-                    except BackendDoesNotExist:
-                        #FIXME: make sure it doesn't throw an exception
-                        doc.save()
+                    #try:
+                    #    doc.fetch()
+                    #except BackendDoesNotExist:
+                    #FIXME: make sure it doesn't throw an exception
+                    doc.save()
 
                     instance = doc._backend_manager.instance
                     doc_state[name] = instance

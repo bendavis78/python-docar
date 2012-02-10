@@ -32,12 +32,12 @@ class HttpBackendManager(object):
                 kwargs = {}
                 related_instance = instance[field.name]
                 Document = field.Document
-                for identifier in Document._meta.identifier:
-                    kwargs[identifier] = related_instance[identifier]
+                kwargs = related_instance
                 doc = Document(kwargs)
                 # To avoid a new fetch, set the instance manualy, needed for
                 # the uri method
                 doc._backend_manager.instance = related_instance
+                doc._backend_manager._to_dict(doc)
                 doc.bound = True
                 data[field.name] = doc
             elif isinstance(field, CollectionField):
