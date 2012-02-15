@@ -7,11 +7,12 @@ class Field(object):
     creation_counter = 0
 
     def __init__(self, default=NOT_PROVIDED, optional=False, context=[],
-            render=True):
+            render=True, scaffold=True):
         self.default = default
         self.optional = optional
         self.context = context
         self.render = render
+        self.scaffold = scaffold
 
         # Set the creation counter. Increment it for each field declaration
         self.creation_counter = Field.creation_counter
