@@ -405,3 +405,39 @@ class Document(object):
 
         """
         return self._backend_manager.uri()
+
+    def scaffold(self):
+        """Return a scaffold of this document.
+
+        :return: A scaffolded document.
+        :rtype: dict
+
+        """
+        data = {}
+        for field in self._meta.local_fields:
+            value = getattr(self, field.name)
+            if field.field_type in "foreign":
+                # If we found a foreign document, we recurse into the scaffold
+                # method of that document
+                data[field.name] = value.scaffold()
+            elif field.field_type in "collection":
+                # We scaffold each document item of the collection set
+                data[field.name] = []
+                for item in value.collection_set:
+                    data[field.name].append(item.scaffold())
+            elif isinstance(value, type(None)):
+                # If we have a not set value and its optional, skip it for the
+                # scaffolding
+                if field.optional:
+                    continue
+
+                # There is no value set yet for this field, so we set it
+                # depependent on the field type
+                if field.field_type in "string":
+                    data[field.name] = ""
+                else:
+                    data[field.name] = None
+            else:
+                data[field.name] = value
+
+        return data

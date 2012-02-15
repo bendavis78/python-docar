@@ -32,18 +32,24 @@ class Field(object):
 ## Primitive Datatypes
 class BooleanField(Field):
     """A datatype representing true or false."""
+    field_type = "boolean"
+
     def __init__(self, *args, **kwargs):
         super(BooleanField, self).__init__(*args, **kwargs)
 
 
 class StringField(Field):
     """A string datattype, a sequence of zero or more unicode characters."""
+    field_type = "string"
+
     def __init__(self, *args, **kwargs):
         super(StringField, self).__init__(*args, **kwargs)
 
 
 class NumberField(Field):
     """A number datatype."""
+    field_type = "number"
+
     def __init__(self, *args, **kwargs):
         super(NumberField, self).__init__(*args, **kwargs)
 
@@ -51,6 +57,8 @@ class NumberField(Field):
 ## Derived Basic Types
 class StaticField(StringField):
     """A static field that always has the same value."""
+    field_type = "static"
+
     def __init__(self, *args, **kwargs):
         self.value = kwargs['value']
         del kwargs['value']
@@ -60,6 +68,8 @@ class StaticField(StringField):
 ## Structured Datatypes.
 class CollectionField(Field):
     """An ordered list of zero or more referenced documents."""
+    field_type = "collection"
+
     def __init__(self, *args, **kwargs):
         self.Collection = args[0]
         super(CollectionField, self).__init__(**kwargs)
@@ -82,6 +92,8 @@ class ObjectField(Field):
 ## Related Fields
 class ForeignDocument(Field):
     """A reference to another document."""
+    field_type = "foreign"
+
     def __init__(self, *args, **kwargs):
         self.Document = args[0]
         if 'inline' in kwargs:

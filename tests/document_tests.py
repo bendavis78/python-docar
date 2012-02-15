@@ -382,6 +382,60 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_({'name': 'name', 'other': 'other'}, doc2._get_context())
         eq_({'name': 'name'}, doc2.doc1._get_context())
 
+    def it_can_be_scaffolded(self):
+        Model1 = Mock(name="MockModel1")
+        Model2 = Mock(name="MockModel2")
+
+        class Doc1(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+
+            class Meta:
+                model = Model1
+
+        class Col(Collection):
+            document = Doc1
+
+        class Doc2(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+            doc1 = fields.ForeignDocument(Doc1)
+            col1 = fields.CollectionField(Col)
+            col2 = fields.CollectionField(Col)
+            opt = fields.NumberField(optional=True)
+            bool1 = fields.BooleanField(default=True)
+            bool2 = fields.BooleanField()
+
+            class Meta:
+                model = Model2
+
+        expected = {
+                "id": None,
+                "name": "",
+                "bool1": True,
+                "bool2": None,
+                "doc1": {
+                    "id": 1,
+                    "name": "Hello Universe"},
+                "col1": [
+                    {"id": 2, "name": ""},
+                    {"id": None, "name": ""}
+                    ],
+                "col2": []
+                }
+
+        doc2 = Doc2()
+        doc2.doc1.id = 1
+        doc2.doc1.name = "Hello Universe"
+        d1 = Doc1()
+        d2 = Doc1()
+
+        d1.id = 2
+        doc2.col1.add(d1)
+        doc2.col1.add(d2)
+
+        eq_(expected, doc2.scaffold())
+
 
 class when_a_representation_is_parsed(unittest.TestCase):
     def setUp(self):

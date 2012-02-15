@@ -888,8 +888,10 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         doc = Doc2(request, context=context)
         doc.save()
 
+        #eq_([('objects.get', {'id': 1, 'name': 'hello'}),
+        #    ('objects.get', {'id': 1, 'name': 'hello'})
+        #    ], Doc1Model.method_calls)
         eq_([('objects.get', {'id': 1, 'name': 'hello'}),
-            ('objects.get', {'id': 1, 'name': 'hello'})
             ], Doc1Model.method_calls)
         Doc2Model.objects.get.assert_called_once_with(id=2,
                 name='hello')
