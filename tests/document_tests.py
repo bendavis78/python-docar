@@ -405,6 +405,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             opt = fields.NumberField(optional=True)
             bool1 = fields.BooleanField(default=True)
             bool2 = fields.BooleanField()
+            xx = fields.StaticField(value="Static")
 
             class Meta:
                 model = Model2

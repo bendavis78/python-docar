@@ -416,6 +416,9 @@ class Document(object):
         data = {}
         for field in self._meta.local_fields:
             value = getattr(self, field.name)
+            if field.field_type in "static":
+                # We dont scaffold static fields per default
+                continue
             if field.field_type in "foreign":
                 # If we found a foreign document, we recurse into the scaffold
                 # method of that document
