@@ -188,4 +188,11 @@ class HttpBackendManager(object):
         #    self.fetch(document, *args, **kwargs)
         response = requests.delete(
                 url=self._get_uri('delete', document), **params)
+
+        if response.status_code > 399 and \
+                response.status_code < 599:
+            # we catch an error
+            raise HttpBackendError(response.status_code,
+                    response.content)
+
         self.response = response
