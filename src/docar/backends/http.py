@@ -153,8 +153,13 @@ class HttpBackendManager(object):
                 if e[0] == 404:
                     # we create a new resource
                     response = requests.post(
-                            url=document.post_uri(),
-                            **params)
+                        url=document.post_uri(),
+                        **params)
+                    if response.status_code > 399 and \
+                            response.status_code < 599:
+                        # we catch an error
+                        raise HttpBackendError(response.status_code,
+                                response.content)
                     return
                 else:
                     # Its some other error, so we just raise it again.
