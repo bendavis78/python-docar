@@ -188,6 +188,7 @@ class DjangoBackendManager(object):
                         map_field = getattr(doc,
                                 "map_%s_field" % defered_name)
                         doc_state[map_field()] = getattr(doc, defered_name)
+                        del(doc_state[defered_name])
                         defered_name = map_field()
                         setattr(doc, defered_name, doc_state[defered_name])
                     if hasattr(field, 'Collection'):
@@ -205,6 +206,7 @@ class DjangoBackendManager(object):
                         setattr(inst, k, v)
                     inst.save()
                 except model.DoesNotExist:
+                    print doc_state
                     inst = m2m.create(**doc_state)
 
                 # now recursively add the nested collections
