@@ -146,14 +146,13 @@ class HttpBackendManager(object):
         # but do create the resource if the error is a 404 NOT FOUND return
         # code.
         if not hasattr(self, 'response'):
-            #FIXME: Change this to catch errors from POST too
             try:
                 document.fetch(*args, **kwargs)
             except HttpBackendError as e:
                 if e[0] == 404:
                     # we create a new resource
                     response = requests.post(
-                        url=document.post_uri(),
+                        url=self._get_uri('post', document),
                         **params)
                     if response.status_code > 399 and \
                             response.status_code < 599:

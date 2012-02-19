@@ -100,7 +100,7 @@ class when_a_http_backend_manager_gets_instantiated(unittest.TestCase):
         expected = {'id': 1}
         mock_resp.content = json.dumps(expected)
 
-        self.mock_request.get.return_value = mock_resp
+        self.mock_request.delete.return_value = mock_resp
 
         manager = BackendManager('http')
 
@@ -446,10 +446,12 @@ class when_a_http_backend_talks_to_an_api_endpoint(unittest.TestCase):
         response.status_code = 404
 
         # set the return value of the GET request and the PUT request
-        self.mock_request.put.return_value = response
-
-        response.content = json.dumps(expected)
         self.mock_request.get.return_value = response
+
+        response = Mock(name='mock_http_post_response')
+        response.status_code = 201
+        response.content = json.dumps(expected)
+        self.mock_request.post.return_value = response
 
         # now make the fetch operation
         manager.save(doc)
