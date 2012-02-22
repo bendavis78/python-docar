@@ -130,7 +130,7 @@ Render the document to a json string. This basically serializes the result from
 
 .. py:method:: Document.uri()
 
-The :meth:`~Dcoument.uri` method returns the resource identifier of this
+The :meth:`~Document.uri` method returns the resource identifier of this
 resource. This method needs to be implemented by the user. It is used to
 render the link to itself. The return value of this method should always be the
 full location of the resource as a string::
@@ -140,6 +140,22 @@ full location of the resource as a string::
 
         def uri(self):
             return "http://location/articles/%s/" % self.id
+
+.. py:method:: Document.scaffold()
+
+The :meth:`~Document.scaffold` creates a skeleton of the document. It returns a
+python dictionary::
+
+    >>> class Article(Document):
+    ...     id = fields.NumberField()
+    ...     name = fields.StringField()
+
+    >>> article = Article()
+    >>> article.scaffold()
+    {
+        "id": None,
+        "name": ""
+    }
 
 ``Meta``
 --------
@@ -226,6 +242,13 @@ to a value. Default is ``False``.
 
 Specify a default value for this field. If no value is set by the user, the
 default value is used when interacting with the backend.
+
+``scaffold``
+~~~~~~~~~~~~
+
+.. py:attribute:: Fields.scaffold
+
+Control whether to scaffold this field. Defaults to ``True``.
 
 Field Types
 -----------

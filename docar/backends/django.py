@@ -152,6 +152,7 @@ class DjangoBackendManager(object):
 
         # First try to retrieve the existing model if it exists
         try:
+            print select_dict
             instance = self._model.objects.get(**select_dict)
         except self._model.DoesNotExist:
             # We create a new model instance

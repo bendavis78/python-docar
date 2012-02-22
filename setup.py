@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 import os
 import sys
 
@@ -21,8 +21,7 @@ if sys.version_info <= (2, 6):
 setup(
     name="docar",
     version="0.1",
-    packages=find_packages('src'),
-    package_dir={'': 'src'},
+    packages=['docar', 'docar.backends'],
     include_package_data=True,
     #zip_safe=False,  # Don't create egg files, Django cannot find templates
                      # in egg files.
@@ -39,8 +38,8 @@ setup(
 and server applications.",
     long_description=read('README.rst'),
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
-        'Environment :: Console',
+        'Development Status :: 4 - Beta',
+        'Environment :: Web Environment',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
