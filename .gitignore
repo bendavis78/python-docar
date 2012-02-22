@@ -5,7 +5,7 @@ cover
 docs/_build
 dist
 build
-src/docar.egg-info
+docar.egg-info
 src/.ropeproject
 *.pyc
 *.swp
