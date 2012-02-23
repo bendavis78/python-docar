@@ -7,6 +7,7 @@ from docar.exceptions import HttpBackendError
 
 
 class HttpBackendManager(object):
+    SSL_CERT = None
 
     def _to_dict(self, document):
         instance = self.instance
@@ -96,6 +97,8 @@ class HttpBackendManager(object):
             # we enable authentication
             auth = HTTPBasicAuth(kwargs['username'], kwargs['password'])
             params['auth'] = auth
+        if self.SSL_CERT:
+            params['verify'] = self.SSL_CERT
         response = requests.get(url=self._get_uri('get', document), **params)
 
         self.response = response
@@ -142,6 +145,9 @@ class HttpBackendManager(object):
         data = json.dumps(doc_state)
         params['data'] = data
 
+        if self.SSL_CERT:
+            params['verify'] = self.SSL_CERT
+
         # fetch the resource if its not yet fetched. Catch for a backend error,
         # but do create the resource if the error is a 404 NOT FOUND return
         # code.
@@ -182,6 +188,10 @@ class HttpBackendManager(object):
             # we enable authentication
             auth = HTTPBasicAuth(kwargs['username'], kwargs['password'])
             params['auth'] = auth
+
+        if self.SSL_CERT:
+            params['verify'] = self.SSL_CERT
+
         # first make a GET request to see if the resource exists
         #if not hasattr(self, 'response'):
         #    self.fetch(document, *args, **kwargs)
