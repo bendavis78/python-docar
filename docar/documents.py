@@ -201,6 +201,23 @@ class Document(object):
                 doc.bound = True
                 setattr(self, field_name, doc)
 
+    def _to_dict(self):
+        data = {}
+
+        for field in self._meta.local_fields:
+            if isinstance(field, ForeignDocument):
+                related = getattr(self, field.name)
+                data[field.name] = related._to_dict()
+            elif isinstance(field, CollectionField):
+                col = getattr(self, field.name)
+                data[field.name] = []
+                for item in col.collection_set:
+                    data[field.name].append(item._to_dict())
+            else:
+                data[field.name] = getattr(self, field.name)
+
+        return data
+
     def _identifier_state(self):
         data = {}
         for elem in self._meta.identifier:

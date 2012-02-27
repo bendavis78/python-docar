@@ -67,6 +67,62 @@ class when_a_document_gets_instantiated(unittest.TestCase):
     def it_has_a_delete_method(self):
         eq_(True, hasattr(self.article, 'delete'))
 
+    def it_can_turn_itself_to_a_dict(self):
+        MockModel = Mock(name="MockModel")
+        MockModel1 = Mock(name="MockModel1")
+        MockModel2 = Mock(name="MockModel2")
+        MockModel3 = Mock(name="MockModel3")
+
+        class Doc3(Document):
+            id = fields.NumberField()
+            pub = fields.BooleanField(default=True)
+
+            class Meta:
+                model = MockModel3
+
+        class Doc2(Document):
+            id = fields.NumberField()
+            doc3 = fields.ForeignDocument(Doc3)
+
+            class Meta:
+                model = MockModel2
+
+        class Col(Collection):
+            document = Doc2
+
+        class Doc1(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = MockModel1
+
+        class Doc(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+            doc1 = fields.ForeignDocument(Doc1)
+            col = fields.CollectionField(Col)
+
+            class Meta:
+                model = MockModel
+
+        expected = {
+                'id': 1,
+                'name': 'MyName',
+                'doc1': {
+                    'id': 2
+                    },
+                'col': [
+                    {'id': 3, 'doc3': {'id': 5, 'pub': True}},
+                    {'id': 4, 'doc3': {'id': 6, 'pub': True}}
+                    ]
+                }
+
+        doc = Doc({'id': 1, 'name': 'MyName', 'doc1': {'id': 2}})
+        doc.col.add(Doc2({'id': 3, 'doc3': {'id': 5, 'pub': True}}))
+        doc.col.add(Doc2({'id': 4, 'doc3': {'id': 6, 'pub': True}}))
+
+        eq_(expected, doc._to_dict())
+
     def it_has_a_list_of_fields_in_meta(self):
         eq_(list, type(self.article._meta.local_fields))
         eq_(fields.NumberField, type(self.article._meta.local_fields[0]))
