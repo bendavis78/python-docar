@@ -1,6 +1,6 @@
 from docar.exceptions import BackendDoesNotExist
 from docar.fields import ForeignDocument, CollectionField
-
+from django.db import IntegrityError
 
 class DjangoBackendManager(object):
     backend_type = 'django'
@@ -164,7 +164,11 @@ class DjangoBackendManager(object):
 
         # save the model to the backend
         #FIXME: Do some exception handling, maybe a full_clean first
-        instance.save()
+
+        try:
+            instance.save()
+        except IntegrityError:
+            pass
 
         self.instance = instance
 
@@ -205,7 +209,10 @@ class DjangoBackendManager(object):
                     inst = m2m.get(**doc._identifier_state())
                     for k, v in doc_state.items():
                         setattr(inst, k, v)
-                    inst.save()
+                    try:
+                        inst.save()
+                    except IntegrityError:
+                        pass
                 except model.DoesNotExist:
                     print doc_state
                     inst = m2m.create(**doc_state)
