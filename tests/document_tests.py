@@ -557,6 +557,51 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         doc.doc1.col.add(doc3)
         assert_raises(ValidationError, doc.validate)
 
+    def it_can_recursively_create_a_dict_with_the_save_state(self):
+        MockModel = Mock()
+        MockModel1 = Mock()
+        MockModel2 = Mock()
+
+        class Doc2(Document):
+            id = fields.NumberField()
+            pub = fields.BooleanField()
+
+            class Meta:
+                model = MockModel2
+
+            def save_pub_field(self):
+                return False
+
+        class Col(Collection):
+            document = Doc2
+
+        class Doc1(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+            col = fields.CollectionField(Col)
+
+            class Meta:
+                model = MockModel1
+
+            def save_name_field(self):
+                return "name_field"
+
+        class Doc(Document):
+            id = fields.NumberField()
+            doc1 = fields.ForeignDocument(Doc1)
+
+            class Meta:
+                model = MockModel
+
+        doc = Doc({'id': 1, 'doc1': {'id': 1, 'name': 'name'}})
+        doc.doc1.col.add(Doc2({'id': 1}))
+
+        expected = {'id': 1, 'doc1': {'id': 1, 'name': 'name_field',
+            'col': [{'id': 1, 'pub': False}]}}
+
+        eq_(expected, doc._save())
+
+
 class when_a_representation_is_parsed(unittest.TestCase):
     def setUp(self):
         self.basket = FruitBasket(BASKET)

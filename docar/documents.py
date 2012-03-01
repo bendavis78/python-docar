@@ -218,6 +218,36 @@ class Document(object):
 
         return data
 
+    #def save(self, *args, **kwargs):
+        #state = self.save(self.to_dict, self)
+        #FIXME: Catch exception
+        #self.backend_manager.save(state, *args, **kwargs)
+
+    def _save(self):
+        data = {}
+        obj = self._to_dict()
+
+        for item, value in obj.iteritems():
+            if hasattr(self, "save_%s_field" % item):
+                # We apply a save field
+                save_field = getattr(self, "save_%s_field" % item)
+                data[item] = save_field()
+                continue
+            if isinstance(value, dict):
+                # Lets follow a relation
+                document = getattr(self, item)
+                data[item] = document._save()
+            elif isinstance(value, list):
+                # we dissovle a collection
+                collection = getattr(self, item)
+                data[item] = []
+                for document in collection.collection_set:
+                    data[item].append(document._save())
+            else:
+                data[item] = value
+
+        return data
+
     def _identifier_state(self):
         data = {}
         for elem in self._meta.identifier:
