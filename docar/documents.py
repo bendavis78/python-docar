@@ -383,6 +383,8 @@ class Document(object):
 
     def save(self, *args, **kwargs):
         """Save the document in a django model backend."""
+        self.validate()
+
         self._backend_manager.save(self, *args, **kwargs)
 
     def update(self, data, *args, **kwargs):
