@@ -8,7 +8,7 @@ from docar import documents
 from docar import fields
 from docar import Document, Collection
 from docar.backends import DjangoBackendManager
-from docar.exceptions import BackendDoesNotExist
+from docar.exceptions import BackendDoesNotExist, ValidationError
 
 from .app import Article
 from .app import Editor
@@ -438,6 +438,67 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
         eq_(expected, doc2.scaffold())
 
+    def it_can_validate_its_fields(self):
+        MockModel = Mock()
+        MockModel1 = Mock()
+        MockModel2 = Mock()
+
+        class Doc2(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = MockModel2
+
+        class Col(Collection):
+            document = Doc2
+
+        class Doc1(Document):
+            id = fields.NumberField()
+            col = fields.CollectionField(Col)
+
+            class Meta:
+                model = MockModel1
+
+        class Doc(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+            pub = fields.BooleanField(optional=True)
+            doc1 = fields.ForeignDocument(Doc1)
+
+        class Meta:
+            model = MockModel
+
+        doc = Doc()
+
+        # A unbound document will fail in any way
+        assert_raises(ValidationError, doc.validate)
+
+        # A document that is valid passes validation
+        doc.id = 1
+        doc.name = "name"
+        doc.doc1.id = 2
+        ok_(doc.validate())
+
+        # Lets try some different values
+        doc.pub = "False string"
+        assert_raises(ValidationError, doc.validate)
+        doc.pub = False
+        doc.id = "false string"
+        assert_raises(ValidationError, doc.validate)
+
+        # foreign documents are validated too
+        doc.id = 1
+        doc.doc1.id = "false string"
+        assert_raises(ValidationError, doc.validate)
+
+        # lets test for collections too
+        doc.doc1.id = 1
+        doc2 = Doc2({'id': 1})
+        doc.doc1.col.add(doc2)
+        ok_(doc.validate())
+        doc3 = Doc2({'id': 'false'})
+        doc.doc1.col.add(doc3)
+        assert_raises(ValidationError, doc.validate)
 
 class when_a_representation_is_parsed(unittest.TestCase):
     def setUp(self):

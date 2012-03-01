@@ -53,7 +53,7 @@ class BooleanField(Field):
         super(BooleanField, self).__init__(*args, **kwargs)
 
     def to_python(Self, value):
-        if isinstance(value, bool):
+        if isinstance(value, bool) or isinstance(value, type(None)):
             return value
         elif value in ('t', 'True', 'true', 1):
             return True

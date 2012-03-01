@@ -3,7 +3,13 @@ import types
 
 from bisect import bisect
 
-from .fields import ForeignDocument, CollectionField, NOT_PROVIDED
+from .fields import (ForeignDocument,
+        CollectionField,
+        NOT_PROVIDED,
+        NumberField,
+        StringField,
+        BooleanField)
+
 from .backends import BackendManager
 
 
@@ -360,6 +366,20 @@ class Document(object):
                 setattr(self, k, col)
             else:
                 setattr(self, k, v)
+
+    def validate(self):
+        for field in self._meta.local_fields:
+            if isinstance(field, ForeignDocument):
+                document = getattr(self, field.name)
+                document.validate()
+            elif isinstance(field, CollectionField):
+                collection = getattr(self, field.name)
+                for document in collection.collection_set:
+                    document.validate()
+            else:
+                field.clean(getattr(self, field.name))
+
+        return True
 
     def save(self, *args, **kwargs):
         """Save the document in a django model backend."""
