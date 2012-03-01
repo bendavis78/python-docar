@@ -9,6 +9,7 @@ from docar import exceptions
 class when_a_boolean_field_gets_instantiated(unittest.TestCase):
     def setUp(self):
         self.bool_field = fields.BooleanField(default=False)
+        self.bool_field.name = "bool_field"
 
     def it_has_a_default_value(self):
         eq_(False, self.bool_field.default)
@@ -24,11 +25,19 @@ class when_a_boolean_field_gets_instantiated(unittest.TestCase):
         eq_(True, self.bool_field.to_python(True))
         eq_(False, self.bool_field.to_python(False))
 
+    def it_can_clean_and_validate_itself(self):
+        eq_(False, self.bool_field.clean(False))
+        assert_raises(exceptions.ValidationError,
+                self.bool_field.clean, 'string')
+        assert_raises(exceptions.ValidationError,
+                self.bool_field.clean, None)
+
 
 class when_a_string_field_gets_instantiated(unittest.TestCase):
     def setUp(self):
         self.string_field = fields.StringField(default='hello world',
                 optional=True)
+        self.string_field.name = "string_field"
 
     def it_has_a_default_value(self):
         eq_('hello world', self.string_field.default)
@@ -42,10 +51,15 @@ class when_a_string_field_gets_instantiated(unittest.TestCase):
         eq_('0', self.string_field.to_python(0))
         eq_('False', self.string_field.to_python(False))
 
+    def it_can_clean_and_validate_itself(self):
+        eq_('string', self.string_field.clean('string'))
+        # That one returns None cause the optional field is set
+        eq_(None, self.string_field.clean(None))
 
 class when_an_integer_field_gets_instantiated(unittest.TestCase):
     def setUp(self):
         self.integer_field = fields.NumberField(default=1)
+        self.integer_field.name = "integer_field"
 
     def it_has_a_default_value(self):
         eq_(1, self.integer_field.default)
@@ -55,6 +69,14 @@ class when_an_integer_field_gets_instantiated(unittest.TestCase):
         eq_(None, self.integer_field.to_python(None))
         assert_raises(exceptions.ValidationError, self.integer_field.to_python,
                 'str')
+
+    def it_can_clean_and_validate_itself(self):
+        eq_(1, self.integer_field.clean(1))
+        assert_raises(exceptions.ValidationError,
+                self.integer_field.to_python, 'str')
+        assert_raises(exceptions.ValidationError,
+                self.integer_field.clean, None)
+
 
 
 class when_a_static_field_gets_instantiated(unittest.TestCase):

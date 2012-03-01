@@ -32,6 +32,17 @@ class Field(object):
         self.document = cls
         cls._meta.add_field(self)
 
+    def validate(self, value):
+        if value is None and not self.optional:
+            raise ValidationError("%s must be set." % self.name)
+        #TODO: blank values
+        #TODO: choices
+
+    def clean(self, value):
+        value = self.to_python(value)
+        self.validate(value)
+
+        return value
 
 ## Primitive Datatypes
 class BooleanField(Field):
