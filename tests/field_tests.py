@@ -1,8 +1,9 @@
 import unittest
 
-from nose.tools import eq_
+from nose.tools import eq_, assert_raises
 
 from docar import fields, Document
+from docar import exceptions
 
 
 class when_a_boolean_field_gets_instantiated(unittest.TestCase):
@@ -14,6 +15,14 @@ class when_a_boolean_field_gets_instantiated(unittest.TestCase):
 
     def it_is_not_optional(self):
         eq_(False, self.bool_field.optional)
+
+    def it_can_turn_itself_to_the_right_datatype(self):
+        assert_raises(exceptions.ValidationError,
+                self.bool_field.to_python, 'string')
+        eq_(False, self.bool_field.to_python(0))
+        eq_(True, self.bool_field.to_python(1))
+        eq_(True, self.bool_field.to_python(True))
+        eq_(False, self.bool_field.to_python(False))
 
 
 class when_a_string_field_gets_instantiated(unittest.TestCase):
@@ -27,6 +36,12 @@ class when_a_string_field_gets_instantiated(unittest.TestCase):
     def it_is_optional(self):
         eq_(True, self.string_field.optional)
 
+    def it_can_turn_itself_to_the_right_datatype(self):
+        eq_(None, self.string_field.to_python(None))
+        eq_('string', self.string_field.to_python('string'))
+        eq_('0', self.string_field.to_python(0))
+        eq_('False', self.string_field.to_python(False))
+
 
 class when_an_integer_field_gets_instantiated(unittest.TestCase):
     def setUp(self):
@@ -34,6 +49,12 @@ class when_an_integer_field_gets_instantiated(unittest.TestCase):
 
     def it_has_a_default_value(self):
         eq_(1, self.integer_field.default)
+
+    def it_can_turn_itself_to_the_right_datatype(self):
+        eq_(True, isinstance(self.integer_field.to_python(0), int))
+        eq_(None, self.integer_field.to_python(None))
+        assert_raises(exceptions.ValidationError, self.integer_field.to_python,
+                'str')
 
 
 class when_a_static_field_gets_instantiated(unittest.TestCase):

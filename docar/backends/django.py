@@ -1,7 +1,6 @@
 from docar.exceptions import BackendDoesNotExist
 from docar.fields import ForeignDocument, CollectionField
 
-
 class DjangoBackendManager(object):
     backend_type = 'django'
 
@@ -163,6 +162,7 @@ class DjangoBackendManager(object):
 
         # save the model to the backend
         #FIXME: Do some exception handling, maybe a full_clean first
+
         instance.save()
 
         self.instance = instance
