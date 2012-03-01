@@ -601,6 +601,56 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
         eq_(expected, doc._save())
 
+    def it_can_recursively_create_documents_from_a_fetch_state(self):
+        MockModel = Mock()
+        MockModel1 = Mock()
+        MockModel2 = Mock()
+
+        class Doc2(Document):
+            id = fields.NumberField()
+            pub = fields.BooleanField()
+
+            class Meta:
+                model = MockModel2
+
+            def fetch_pub_field(self):
+                return False
+
+        class Col(Collection):
+            document = Doc2
+
+        class Doc1(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+            col = fields.CollectionField(Col)
+
+            class Meta:
+                model = MockModel1
+
+            def fetch_name_field(self):
+                return "name_field"
+
+        class Doc(Document):
+            id = fields.NumberField()
+            doc1 = fields.ForeignDocument(Doc1)
+
+            class Meta:
+                model = MockModel
+
+        obj= {'id': 1, 'doc1': {'id': 1, 'name': 'name',
+            'col': [{'id': 1, 'pub': True}]}}
+
+        doc = Doc()
+
+        doc._fetch(obj)
+
+        eq_(1, doc.id)
+        eq_(True, isinstance(doc.doc1, Doc1))
+        eq_(True, isinstance(doc.doc1.col, Col))
+        eq_(1, doc.doc1.id)
+        eq_('name_field', doc.doc1.name)
+        eq_(1, len(doc.doc1.col.collection_set))
+
 
 class when_a_representation_is_parsed(unittest.TestCase):
     def setUp(self):

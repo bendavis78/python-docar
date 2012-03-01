@@ -248,6 +248,33 @@ class Document(object):
 
         return data
 
+    def _fetch(self, obj):
+        data = {}
+
+        for item, value in obj.iteritems():
+            if hasattr(self, "fetch_%s_field" % item):
+                fetch_field = getattr(self, "fetch_%s_field" % item)
+                value = fetch_field()
+            if isinstance(value, dict):
+                # Lets create a new relation
+                document = getattr(self, item)
+                document._fetch(value)
+                setattr(self, item, document)
+            elif isinstance(value, list):
+                # we dissovle a collection
+                collection = getattr(self, item)
+                collection.collection_set = []
+                Document = collection.document
+                for elem in value:
+                    document = Document()
+                    document._fetch(elem)
+                    collection.add(document)
+                setattr(self, item, collection)
+            else:
+                setattr(self, item, value)
+
+        return data
+
     def _identifier_state(self):
         data = {}
         for elem in self._meta.identifier:
