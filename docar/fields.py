@@ -8,14 +8,16 @@ class NOT_PROVIDED:
 class Field(object):
     # This counter is used to keep track of the order of declaration of fields.
     creation_counter = 0
+    default_validators = []
 
     def __init__(self, default=NOT_PROVIDED, optional=False, context=[],
-            render=True, scaffold=True):
+            render=True, scaffold=True, validators=[]):
         self.default = default
         self.optional = optional
         self.context = context
         self.render = render
         self.scaffold = scaffold
+        self.validators = self.default_validators + validators
 
         # Set the creation counter. Increment it for each field declaration
         self.creation_counter = Field.creation_counter
@@ -32,6 +34,10 @@ class Field(object):
         self.document = cls
         cls._meta.add_field(self)
 
+    def run_validators(self, value):
+        for validator in self.validators:
+            validator(value)
+
     def validate(self, value):
         if value is None and not self.optional:
             raise ValidationError("%s must be set." % self.name)
@@ -41,6 +47,7 @@ class Field(object):
     def clean(self, value):
         value = self.to_python(value)
         self.validate(value)
+        self.run_validators(value)
 
         return value
 

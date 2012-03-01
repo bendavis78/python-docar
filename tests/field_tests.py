@@ -1,9 +1,25 @@
 import unittest
 
 from nose.tools import eq_, assert_raises
-
+from mock import Mock
 from docar import fields, Document
 from docar import exceptions
+
+
+class when_a_field_gets_instantiated(unittest.TestCase):
+    def it_can_have_a_validator_function(self):
+        v1 = Mock()
+        v2 = Mock()
+
+        v2.side_effect = exceptions.ValidationError
+
+        field = fields.StringField(validators=[v1, v2])
+        field.name = "string_field"
+
+        assert_raises(exceptions.ValidationError,
+                field.run_validators, 'string_value')
+        eq_(True, v1.called)
+        eq_(True, v2.called)
 
 
 class when_a_boolean_field_gets_instantiated(unittest.TestCase):
