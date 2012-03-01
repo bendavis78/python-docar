@@ -1,3 +1,6 @@
+from .exceptions import ValidationError
+
+
 class NOT_PROVIDED:
     pass
 
@@ -38,6 +41,15 @@ class BooleanField(Field):
     def __init__(self, *args, **kwargs):
         super(BooleanField, self).__init__(*args, **kwargs)
 
+    def to_python(Self, value):
+        if isinstance(value, bool):
+            return value
+        elif value in ('t', 'True', 'true', 1):
+            return True
+        elif value in ('f', 'False', 'false', 0):
+            return False
+        raise ValidationError('%s must be either True or False' % str(value))
+
 
 class StringField(Field):
     """A string datattype, a sequence of zero or more unicode characters."""
@@ -46,6 +58,12 @@ class StringField(Field):
     def __init__(self, *args, **kwargs):
         super(StringField, self).__init__(*args, **kwargs)
 
+    def to_python(self, value):
+        #TODO: Maybe return always unicode?
+        if isinstance(value, str) or value is None:
+            return value
+        return str(value)
+
 
 class NumberField(Field):
     """A number datatype."""
@@ -53,6 +71,12 @@ class NumberField(Field):
 
     def __init__(self, *args, **kwargs):
         super(NumberField, self).__init__(*args, **kwargs)
+
+    def to_python(self, value):
+        if isinstance(value, int) or value is None:
+            return value
+        else:
+            raise ValidationError('%s must be a integer.' % str(value))
 
 
 ## Derived Basic Types

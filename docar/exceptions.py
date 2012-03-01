@@ -19,3 +19,7 @@ class HttpBackendError(Exception):
     The error is returned as a tuple, the first element gives the status code
     as an integer, the second error contains the response body."""
     pass
+
+class ValidationError(Exception):
+    """This exception is raised if a field couldn't validate."""
+    pass
