@@ -34,12 +34,18 @@ class Field(object):
         self.document = cls
         cls._meta.add_field(self)
 
+    def to_python(self, value):
+        return value
+
     def run_validators(self, value):
         for validator in self.validators:
             validator(value)
 
     def validate(self, value):
-        if value is None and not self.optional:
+        if hasattr(self, 'value'):
+            # A static field, the value must be set anyway
+            return
+        if (value is None and not self.optional):
             raise ValidationError("%s must be set." % self.name)
         #TODO: blank values
         #TODO: choices

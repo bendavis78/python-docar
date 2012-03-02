@@ -463,6 +463,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             id = fields.NumberField()
             name = fields.StringField()
             pub = fields.BooleanField(optional=True)
+            string = fields.StaticField(value="a_string")
             doc1 = fields.ForeignDocument(Doc1)
 
         class Meta:
