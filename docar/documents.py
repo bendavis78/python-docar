@@ -11,6 +11,7 @@ from .fields import (ForeignDocument,
         BooleanField)
 
 from .backends import BackendManager
+from .exceptions import ValidationError
 
 
 DEFAULT_NAMES = ('identifier', 'model', 'excludes', 'backend_type', 'context',
@@ -368,16 +369,24 @@ class Document(object):
                 setattr(self, k, v)
 
     def validate(self):
+        errors = {}
+
         for field in self._meta.local_fields:
-            if isinstance(field, ForeignDocument):
-                document = getattr(self, field.name)
-                document.validate()
-            elif isinstance(field, CollectionField):
-                collection = getattr(self, field.name)
-                for document in collection.collection_set:
+            try:
+                if isinstance(field, ForeignDocument):
+                    document = getattr(self, field.name)
                     document.validate()
-            else:
-                field.clean(getattr(self, field.name))
+                elif isinstance(field, CollectionField):
+                    collection = getattr(self, field.name)
+                    for document in collection.collection_set:
+                        document.validate()
+                else:
+                    field.clean(getattr(self, field.name))
+            except ValidationError, e:
+                errors[field.name] = e.message
+
+        if errors:
+            raise ValidationError(errors)
 
         return True
 

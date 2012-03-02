@@ -45,8 +45,9 @@ class Field(object):
         if hasattr(self, 'value'):
             # A static field, the value must be set anyway
             return
-        if (value is None and not self.optional):
-            raise ValidationError("%s must be set." % self.name)
+        if ((value is None or value is "")
+                and not self.optional):
+            raise ValidationError("Field must be set.")
         #TODO: blank values
         #TODO: choices
 
@@ -72,7 +73,7 @@ class BooleanField(Field):
             return True
         elif value in ('f', 'False', 'false', 0):
             return False
-        raise ValidationError('%s must be either True or False' % str(value))
+        raise ValidationError('Must be either True or False')
 
 
 class StringField(Field):
@@ -100,7 +101,7 @@ class NumberField(Field):
         if isinstance(value, int) or value is None:
             return value
         else:
-            raise ValidationError('%s must be a integer.' % str(value))
+            raise ValidationError('Must be an integer.')
 
 
 ## Derived Basic Types
