@@ -5,10 +5,7 @@ from bisect import bisect
 
 from .fields import (ForeignDocument,
         CollectionField,
-        NOT_PROVIDED,
-        NumberField,
-        StringField,
-        BooleanField)
+        NOT_PROVIDED)
 
 from .backends import BackendManager
 from .exceptions import ValidationError
@@ -218,10 +215,29 @@ class Document(object):
 
         return data
 
-    #def save(self, *args, **kwargs):
-        #state = self.save(self.to_dict, self)
-        #FIXME: Catch exception
-        #self.backend_manager.save(state, *args, **kwargs)
+    def _from_dict(self, obj):
+        """Create the document from a dict structure."""
+        for item, value in obj.iteritems():
+            if isinstance(value, dict):
+                Document = [field.Document
+                        for field in self._meta.related_fields
+                        if field.name in item]
+                # Lets create a new relation
+                document = Document[0]()
+                document._from_dict(value)
+                setattr(self, item, document)
+            elif isinstance(value, list):
+                # a collection
+                collection = getattr(self, item)
+                collection.collection_set = []
+                Document = collection.document
+                for elem in value:
+                    document = Document()
+                    document._from_dict(elem)
+                    collection.add(document)
+                setattr(self, item, collection)
+            else:
+                setattr(self, item, value)
 
     def _save(self):
         data = {}
@@ -254,12 +270,14 @@ class Document(object):
         for item, value in obj.iteritems():
             if hasattr(self, "fetch_%s_field" % item):
                 fetch_field = getattr(self, "fetch_%s_field" % item)
+                #TODO: give the original value to the fetch method as argument
                 value = fetch_field()
             if isinstance(value, dict):
                 # Lets create a new relation
                 document = getattr(self, item)
-                document._fetch(value)
-                setattr(self, item, document)
+                value = document._fetch(value)
+                #setattr(self, item, document)
+                data[item] = value
             elif isinstance(value, list):
                 # we dissovle a collection
                 collection = getattr(self, item)
@@ -269,9 +287,11 @@ class Document(object):
                     document = Document()
                     document._fetch(elem)
                     collection.add(document)
-                setattr(self, item, collection)
+                #setattr(self, item, collection)
+                data[item] = collection
             else:
-                setattr(self, item, value)
+                #setattr(self, item, value)
+                data[item] = value
 
         return data
 
@@ -485,9 +505,8 @@ class Document(object):
         # Retrieve the object from the backend
         obj = self._backend_manager.fetch(self, **kwargs)
 
-        # Update the document
-        for k, v in obj.iteritems():
-            setattr(self, k, v)
+        obj = self._fetch(obj)
+        self._from_dict(obj)
 
     def delete(self, **kwargs):
         """Delete a model instance associated with this document."""

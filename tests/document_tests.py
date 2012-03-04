@@ -123,6 +123,80 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
         eq_(expected, doc._to_dict())
 
+    def it_can_create_itself_from_a_dict(self):
+        MockModel = Mock(name="MockModel")
+        MockModel1 = Mock(name="MockModel1")
+        MockModel2 = Mock(name="MockModel2")
+        MockModel3 = Mock(name="MockModel3")
+
+        class Doc3(Document):
+            id = fields.NumberField()
+            pub = fields.BooleanField(default=True)
+
+            class Meta:
+                model = MockModel3
+
+        class Col2(Collection):
+            document = Doc3
+
+        class Doc2(Document):
+            id = fields.NumberField()
+            doc3 = fields.ForeignDocument(Doc3)
+
+            class Meta:
+                model = MockModel2
+
+        class Col(Collection):
+            document = Doc2
+
+        class Doc1(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = MockModel1
+
+        class Doc(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+            doc1 = fields.ForeignDocument(Doc1)
+            col = fields.CollectionField(Col)
+            col2 = fields.CollectionField(Col2)
+
+            class Meta:
+                model = MockModel
+
+        input = {
+                'id': 1,
+                'name': 'MyName',
+                'doc1': {
+                    'id': 2
+                    },
+                'col': [
+                    {'id': 3, 'doc3':
+                        {'id': 5, 'pub': True}},
+                    {'id': 4, 'doc3':
+                        {'id': 6, 'pub': True}}
+                    ],
+                'col2': [
+                    {'id': 7, 'pub': True},
+                    {'id': 8, 'pub': True}
+                ]
+                }
+
+        doc = Doc()
+        doc._from_dict(input)
+
+        eq_(1, doc.id)
+        eq_('MyName', doc.name)
+        eq_(2, doc.doc1.id)
+        eq_(2, len(doc.col.collection_set))
+        eq_(3, doc.col.collection_set[0].id)
+        eq_(5, doc.col.collection_set[0].doc3.id)
+        eq_(4, doc.col.collection_set[1].id)
+        eq_(6, doc.col.collection_set[1].doc3.id)
+        eq_(7, doc.col2.collection_set[0].id)
+        eq_(8, doc.col2.collection_set[1].id)
+
     def it_has_a_list_of_fields_in_meta(self):
         eq_(list, type(self.article._meta.local_fields))
         eq_(fields.NumberField, type(self.article._meta.local_fields[0]))
@@ -202,10 +276,6 @@ class when_a_document_gets_instantiated(unittest.TestCase):
                 'first_name': 'Christo',
                 'last_name': 'Buschek',
                 'age': 31}
-        #mock_editor = EditorModel.return_value
-        #mock_editor.first_name = "Christo"
-        #mock_editor.last_name = "Buschek"
-        #mock_editor.age = 31
 
         editor._backend_manager = Mock()
         editor._backend_manager.fetch.return_value = mock_editor
@@ -642,7 +712,11 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
         doc = Doc()
 
-        doc._fetch(obj)
+        # mock the return from the backend
+        doc._backend_manager.fetch = Mock()
+        doc._backend_manager.fetch.return_value = obj
+
+        doc.fetch()
 
         eq_(1, doc.id)
         eq_(True, isinstance(doc.doc1, Doc1))
