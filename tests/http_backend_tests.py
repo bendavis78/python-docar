@@ -208,7 +208,7 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
                     {'other': 'first'},
                     {'other': 'second'},
                     ],
-                'fetch': 'jaja'
+                'fetched': 'jaja'
                 }
         response = Mock(name='mock_http_response')
         response.content = json.dumps(expected)
@@ -227,7 +227,7 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
         eq_(expected['id'], doc.id)
         eq_(expected['name'], doc.name)
         eq_(expected['pub'], doc.pub)
-        eq_(expected['fetch'], doc.fetched)
+        eq_('fetch', doc.fetched)
         eq_(None, doc.optional)
         eq_(True, isinstance(doc.ext, Other))
         eq_(True, isinstance(doc.col, OtherCol))

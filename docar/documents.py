@@ -276,7 +276,6 @@ class Document(object):
                 # Lets create a new relation
                 document = getattr(self, item)
                 value = document._fetch(value)
-                #setattr(self, item, document)
                 data[item] = value
             elif isinstance(value, list):
                 # we dissovle a collection
@@ -287,10 +286,8 @@ class Document(object):
                     document = Document()
                     document._fetch(elem)
                     collection.add(document)
-                #setattr(self, item, collection)
                 data[item] = collection
             else:
-                #setattr(self, item, value)
                 data[item] = value
 
         return data
@@ -504,7 +501,6 @@ class Document(object):
         this resource."""
         # Retrieve the object from the backend
         obj = self._backend_manager.fetch(self, **kwargs)
-
         obj = self._fetch(obj)
         self._from_dict(obj)
 
