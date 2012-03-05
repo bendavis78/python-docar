@@ -316,27 +316,6 @@ class Document(object):
 
         return obj
 
-    def _prepare_fetch(self):
-        """Create a dict with the document state, and apply all
-        ``fetch_FIELD_field`` methods."""
-        #FIXME: Handle the fact if the document is not mapped to a model
-        data = {}
-
-        # populate the data_dict with the documents state
-        for field in self._meta.local_fields:
-            if hasattr(self, "map_%s_field" % field.name):
-                # We have a fetch method for this field
-                map_field = getattr(self, "map_%s_field" % field.name)
-                data[field.name] = map_field()
-
-                # skip to the next iteration
-                continue
-
-            # No save method has been provided, lets map the fields one to one.
-            data[field.name] = getattr(self, field.name)
-
-        return data
-
     def _prepare_save(self):
         """Create a dict with the document state, and apply all
         ``save_FIELD_field`` methods."""

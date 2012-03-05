@@ -328,7 +328,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             def save_name_field(self):
                 return "save_field"
 
-            def map_name_field(self):
+            def fetch_name_field(self):
                 return "map_field"
 
             def uri(self):
@@ -345,12 +345,15 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_("name", doc.name)
         eq_(expected, doc.to_python())
 
+        # overwrite the object handed over to the save method
         expected['name'] = "save_field"
         del(expected['link'])
         eq_(expected, doc._prepare_save())
 
-        expected['name'] = "map_field"
-        eq_(expected, doc._prepare_fetch())
+        # overwrite the return object from the fetch
+        expected_fetch = expected
+        expected_fetch['name'] = "map_field"
+        eq_(expected_fetch, doc._fetch(expected))
 
     def it_can_fetch_its_state_from_the_model_backend(self):
         doc1 = Article({'id': 1})
