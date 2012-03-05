@@ -14,19 +14,19 @@ class HttpBackendManager(object):
         data = {}
 
         for field in document._meta.local_fields:
-            instance_name = field.name
+            instance_field_name = field.name
             if hasattr(document, "map_%s_field" % field.name):
                 # We map the fieldname of the backend instance to the fieldname
                 # of the document.
                 map_field = getattr(document, "map_%s_field" % field.name)
                 # just create a new field on the instance itself
-                instance_name = map_field()
+                instance_field_name = map_field()
             if not field.name in instance:
                 data[field.name] = None
                 continue
             if isinstance(field, ForeignDocument):
                 kwargs = {}
-                related_instance = instance[instance_name]
+                related_instance = instance[instance_field_name]
                 Document = field.Document
                 kwargs = related_instance
                 doc = Document(kwargs)

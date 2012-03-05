@@ -12,20 +12,20 @@ class DjangoBackendManager(object):
         instance = self.instance
         for field in document._meta.local_fields:
             # copy to field name to be able to map it in the process
-            instance_name = field.name
+            instance_field_name = field.name
             if hasattr(document, "map_%s_field" % field.name):
                 # We map the fieldname of the backend instance to the fieldname
                 # of the document.
                 map_field = getattr(document, "map_%s_field" % field.name)
                 # just create a new field on the instance itself
-                instance_name = map_field()
-            if not hasattr(instance, instance_name):
+                instance_field_name = map_field()
+            if not hasattr(instance, instance_field_name):
                 # The instance has no value for this field
                 data[field.name] = None
                 continue
             if isinstance(field, ForeignDocument):
                 kwargs = {}
-                related_instance = getattr(instance, instance_name)
+                related_instance = getattr(instance, instance_field_name)
 
                 if not related_instance:
                     # The related instance is not set. We ignore if a related
@@ -43,16 +43,16 @@ class DjangoBackendManager(object):
                 doc.bound = True
                 data[field.name] = doc._backend_manager._to_dict(doc)
             elif isinstance(field, CollectionField):
-                data[field.name] = self._get_collection(field,
+                data[field.name] = self._get_collection(field, instance_field_name,
                         context=document._get_context())
-            elif hasattr(instance, instance_name):
+            elif hasattr(instance, instance_field_name):
                 # Otherwise set the value of the field from the retrieved model
                 # object
-                data[field.name] = getattr(instance, instance_name)
+                data[field.name] = getattr(instance, instance_field_name)
 
         return data
 
-    def _get_collection(self, field, context={}):
+    def _get_collection(self, field, instance_field_name, context={}):
         # FIXME: This relies on the fact that fetch has been called already
         instance = self.instance
 
@@ -60,7 +60,7 @@ class DjangoBackendManager(object):
         collection = field.Collection()
 
         # create a document for each item in the m2m relation
-        relation = getattr(instance, field.name)
+        relation = getattr(instance, instance_field_name)
 
         for item in relation.all():
             select_dict = {}
