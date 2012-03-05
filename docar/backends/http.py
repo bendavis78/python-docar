@@ -33,7 +33,7 @@ class HttpBackendManager(object):
                 # To avoid a new fetch, set the instance manualy, needed for
                 # the uri method
                 if self._get_uri('get', doc):
-                    data[field.name] = doc._backend_manager.fetch(doc)
+                    data[field.name] = doc._backend_manager.fetch(doc, **self.kwargs)
                 else:
                     data[field.name] = related_instance
             elif isinstance(field, CollectionField):
@@ -90,7 +90,8 @@ class HttpBackendManager(object):
 
     def fetch(self, document, *args, **kwargs):
         params = {}
-        if hasattr(self, 'auth'):
+        self.kwargs = kwargs
+        if 'auth' in kwargs:
             params['auth'] = self.auth
         elif 'username' in kwargs and 'password' in kwargs:
             # we enable authentication
