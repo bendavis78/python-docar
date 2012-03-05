@@ -524,7 +524,8 @@ class Document(object):
             This method should always return the absolute URI as a string.
 
         """
-        return self._backend_manager.uri()
+        if hasattr(self._backend_manager, 'uri'):
+            return self._backend_manager.uri()
 
     def scaffold(self):
         """Return a scaffold of this document.

@@ -13,43 +13,37 @@ class HttpBackendManager(object):
         instance = self.instance
         data = {}
 
-        return self.instance
-        #for field in document._meta.local_fields:
-        #    if hasattr(document, "fetch_%s_field" % field.name):
-        #        # We map the fieldname of the backend instance to the fieldname
-        #        # of the document.
-        #        fetch_field = getattr(document, "fetch_%s_field" % field.name)
-        #        # just create a new field on the instance itself
-        #        instance[field.name] = instance[fetch_field()]
-        #    if hasattr(document, "map_%s_field" % field.name):
-        #        # We map the fieldname of the backend instance to the fieldname
-        #        # of the document.
-        #        map_field = getattr(document, "map_%s_field" % field.name)
-        #        # just create a new field on the instance itself
-        #        instance[field.name], instance[map_field()]
-        #    if not field.name in instance:
-        #        data[field.name] = None
-        #        continue
-        #    if isinstance(field, ForeignDocument):
-        #        kwargs = {}
-        #        related_instance = instance[field.name]
-        #        Document = field.Document
-        #        kwargs = related_instance
-        #        doc = Document(kwargs)
-        #        # To avoid a new fetch, set the instance manualy, needed for
-        #        # the uri method
-        #        doc._backend_manager.instance = related_instance
-        #        doc._backend_manager._to_dict(doc)
-        #        doc.bound = True
-        #        data[field.name] = doc
-        #    elif isinstance(field, CollectionField):
-        #        data[field.name] = self._get_collection(field,
-        #                context=document._context)
-        #    elif field.name in instance:
-        #        # Otherwise set the value of the field from the retrieved model
-        #        # object
-        #        data[field.name] = instance[field.name]
-        #return data
+        for field in document._meta.local_fields:
+            instance_name = field.name
+            if hasattr(document, "map_%s_field" % field.name):
+                # We map the fieldname of the backend instance to the fieldname
+                # of the document.
+                map_field = getattr(document, "map_%s_field" % field.name)
+                # just create a new field on the instance itself
+                instance_name = map_field()
+            if not field.name in instance:
+                data[field.name] = None
+                continue
+            if isinstance(field, ForeignDocument):
+                kwargs = {}
+                related_instance = instance[instance_name]
+                Document = field.Document
+                kwargs = related_instance
+                doc = Document(kwargs)
+                # To avoid a new fetch, set the instance manualy, needed for
+                # the uri method
+                if self._get_uri('get', doc):
+                    data[field.name] = doc._backend_manager.fetch(doc)
+                else:
+                    data[field.name] = related_instance
+            elif isinstance(field, CollectionField):
+                data[field.name] = self._get_collection(field,
+                        context=document._context)
+            elif field.name in instance:
+                # Otherwise set the value of the field from the retrieved model
+                # object
+                data[field.name] = instance[field.name]
+        return data
 
     def _get_collection(self, field, context={}):
         # FIXME: This relies on the fact that fetch has been called already
@@ -89,12 +83,16 @@ class HttpBackendManager(object):
             # we found a specific uri method for this verb
             uri_method = getattr(document, "%s_uri" % verb)
             return uri_method()
-        else:
+        elif hasattr(document, "uri"):
             return document.uri()
+        else:
+            return False
 
     def fetch(self, document, *args, **kwargs):
         params = {}
-        if 'username' in kwargs and 'password' in kwargs:
+        if hasattr(self, 'auth'):
+            params['auth'] = self.auth
+        elif 'username' in kwargs and 'password' in kwargs:
             # we enable authentication
             auth = HTTPBasicAuth(kwargs['username'], kwargs['password'])
             params['auth'] = auth

@@ -174,6 +174,16 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
                 backend_type = 'http'
                 identifier = 'other'
 
+        class Other2(Document):
+            other = fields.StringField()
+
+            class Meta:
+                backend_type = 'http'
+                identifier = 'other'
+
+            def uri(self):
+                return "http://other_location"
+
         class OtherCol(Collection):
             document = Other
 
@@ -182,6 +192,7 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
             name = fields.StringField()
             pub = fields.BooleanField()
             ext = fields.ForeignDocument(Other)
+            ext2 = fields.ForeignDocument(Other2)
             col = fields.CollectionField(OtherCol)
             optional = fields.StringField()
             fetched = fields.StringField()
@@ -197,6 +208,9 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
 
         doc = Doc({'id': 1})
 
+        expected_other2 = {
+                'other': 'document2'
+                }
         expected = {
                 'id': 1,
                 'name': 'hello',
@@ -204,36 +218,45 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
                 'ext': {
                     'other': 'document'
                     },
+                'ext2': expected_other2,
                 'col': [
                     {'other': 'first'},
                     {'other': 'second'},
                     ],
                 'fetched': 'jaja'
                 }
-        response = Mock(name='mock_http_response')
-        response.content = json.dumps(expected)
-        response.status_code = 200
+        response_doc = Mock(name='mock_http_response')
+        response_doc.content = json.dumps(expected)
+        response_doc.status_code = 200
+
+        response_other = Mock(name='mock_http_other_response')
+        response_other.content = json.dumps(expected_other2)
+        response_other.status_code = 200
+
+        responses = [response_other, response_doc]
+        def response_side_effect(*args, **kwargs):
+            return responses.pop()
 
         # set the return value of the GET request
-        self.mock_request.get.return_value = response
+        self.mock_request.get.side_effect = response_side_effect
 
         # Make sure the name is not set right now
         eq_(expected['id'], doc.id)
         eq_(None, doc.name)
 
-        # fetch the document from the HTTP backen, (is_bound = True)
-        doc.fetch()
+        # fetch the document from the HTTP backend, (is_bound = True)
+        ret = doc._backend_manager.fetch(doc)
 
-        eq_(expected['id'], doc.id)
-        eq_(expected['name'], doc.name)
-        eq_(expected['pub'], doc.pub)
-        eq_('fetch', doc.fetched)
-        eq_(None, doc.optional)
-        eq_(True, isinstance(doc.ext, Other))
-        eq_(True, isinstance(doc.col, OtherCol))
+        eq_(expected['id'], ret['id'])
+        eq_(expected['name'], ret['name'])
+        eq_(expected['pub'], ret['pub'])
+        eq_(expected['fetched'], ret['fetched'])
+        eq_(expected_other2, ret['ext2'])
+        eq_(None, ret['optional'])
 
         # we should have made one GET request
-        eq_([('get', {'url': 'http://location'})],
+        eq_([('get', {'url': 'http://location'}),
+            ('get', {'url': 'http://other_location'})],
                 self.mock_request.method_calls)
 
     def it_can_update_the_document_on_the_remote_backend(self):
