@@ -123,7 +123,7 @@ class HttpBackendManager(object):
             auth = HTTPBasicAuth(kwargs['username'], kwargs['password'])
             params['auth'] = auth
 
-        doc_state = document._prepare_save()
+        doc_state = document._save()
 
         for field in document._meta.local_fields:
             name = field.name

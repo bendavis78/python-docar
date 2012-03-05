@@ -346,9 +346,10 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_(expected, doc.to_python())
 
         # overwrite the object handed over to the save method
-        expected['name'] = "save_field"
-        del(expected['link'])
-        eq_(expected, doc._prepare_save())
+        expected_save = expected
+        expected_save['name'] = "save_field"
+        del(expected_save['link'])
+        eq_(expected_save, doc._save())
 
         # overwrite the return object from the fetch
         expected_fetch = expected
@@ -951,7 +952,7 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
         eq_(True, hasattr(doc._meta.local_fields[1], 'optional'))
         eq_(True, doc._meta.local_fields[1].optional)
 
-        eq_({'id': 1}, doc._prepare_save())
+        eq_({'id': 1}, doc._save())
 
 
 class when_a_document_contains_a_collection_field(unittest.TestCase):

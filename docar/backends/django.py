@@ -102,7 +102,7 @@ class DjangoBackendManager(object):
         m2m_relations = []
 
         # we call this method to make sure we run all save_FIELD_field methods
-        doc_state = document._prepare_save()
+        doc_state = document._save()
 
         # we defere the collections to later and replace foreign documents with
         # foreign related model instances
@@ -173,7 +173,7 @@ class DjangoBackendManager(object):
                 continue
             m2m = getattr(instance, local_name)
             for doc in collection.collection_set:
-                doc_state = doc._prepare_save()
+                doc_state = doc._save()
 
                 # Iterate all fields of this doc, to defere collections
                 for field in doc._meta.local_fields:

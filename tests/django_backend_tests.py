@@ -101,7 +101,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         doc._get_context.return_value = {}
         doc._meta.identifier = ["id"]
         doc._identifier_state.return_value = {"id": 1}
-        doc._prepare_save.return_value = {"id": 1}
+        doc._save.return_value = {"id": 1}
         doc._meta.local_fields = [field]
 
         # make sure we are working with correct expectations
@@ -130,7 +130,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         doc._get_context.return_value = {}
         doc._meta.identifier = ["id"]
         doc._identifier_state.return_value = {"id": 1}
-        doc._prepare_save.return_value = {"id": 1}
+        doc._save.return_value = {"id": 1}
         doc._meta.local_fields = [field]
 
         # the manager.save() method doesn't return on success
