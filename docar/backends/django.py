@@ -5,30 +5,27 @@ class DjangoBackendManager(object):
     backend_type = 'django'
 
     def _to_dict(self, document):
-        instance = self.instance
+        if not self.instance:
+            #FIXME: Handle not fetched instances better
+            return {}
         data = {}
+        instance = self.instance
         for field in document._meta.local_fields:
-            if hasattr(document, "fetch_%s_field" % field.name):
-                # we provide a different value, defined in a fetch method for
-                # this field
-                fetch_field = getattr(document, "fetch_%s_field" % field.name)
-                data[field.name] = fetch_field()
-                # this value overrides everything else, so we skip this field
-                # for further processing
-                continue
+            # copy to field name to be able to map it in the process
+            instance_name = field.name
             if hasattr(document, "map_%s_field" % field.name):
                 # We map the fieldname of the backend instance to the fieldname
                 # of the document.
                 map_field = getattr(document, "map_%s_field" % field.name)
                 # just create a new field on the instance itself
-                setattr(instance, field.name, getattr(instance, map_field()))
-            if not hasattr(instance, field.name):
+                instance_name = map_field()
+            if not hasattr(instance, instance_name):
                 # The instance has no value for this field
                 data[field.name] = None
                 continue
             if isinstance(field, ForeignDocument):
                 kwargs = {}
-                related_instance = getattr(instance, field.name)
+                related_instance = getattr(instance, instance_name)
 
                 if not related_instance:
                     # The related instance is not set. We ignore if a related
@@ -43,17 +40,15 @@ class DjangoBackendManager(object):
                 # To avoid a new fetch, set the instance manualy, needed for
                 # the uri method
                 doc._backend_manager.instance = related_instance
-                #FIXME: There should be no fetch here
-                doc.fetch()
                 doc.bound = True
-                data[field.name] = doc
+                data[field.name] = doc._backend_manager._to_dict(doc)
             elif isinstance(field, CollectionField):
                 data[field.name] = self._get_collection(field,
                         context=document._get_context())
-            elif hasattr(instance, field.name):
+            elif hasattr(instance, instance_name):
                 # Otherwise set the value of the field from the retrieved model
                 # object
-                data[field.name] = getattr(instance, field.name)
+                data[field.name] = getattr(instance, instance_name)
 
         return data
 
@@ -88,7 +83,7 @@ class DjangoBackendManager(object):
             for k, v in obj.iteritems():
                 setattr(doc, k, v)
             collection.add(doc)
-        return collection
+        return collection._to_dict()
 
     def fetch(self, document, **kwargs):
         select_dict = document._identifier_state()

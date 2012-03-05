@@ -66,5 +66,12 @@ class Collection(object):
 
         return data
 
+    def _to_dict(self):
+        data = []
+        for document in self.collection_set:
+            data.append(document._to_dict())
+
+        return data
+
     def to_json(self):
         return json.dumps(self._prepare_render())

@@ -44,9 +44,15 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
 
         Doc2Model.objects.get.return_value = mock_doc2_model
 
-        Doc = Mock(spec_set=Document)
-        Doc._meta.identifier = ['name']
-        Coll = Mock(spec="Collection")
+        class Doc(Document):
+            name = fields.StringField()
+
+            class Meta:
+                identifier = 'name'
+                model = Mock()
+
+        class Coll(Collection):
+            document = Doc
 
         class Doc2(Document):
             name = fields.StringField()
@@ -63,18 +69,11 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             def map_overwrite_field(self):
                 return 'overwritten'
 
-        mock_doc = Mock(spec_set=Document)
-        mock_doc._meta = Mock()
-        mock_doc._meta.identifier = []
-        mock_coll = Mock(name="Collection")
-        mock_doc = Doc.return_value
-        mock_coll = Coll.return_value
-
         expected = {
                 'name': 'value',
                 'choice': 'True',
-                'related': mock_doc,
-                'coll': mock_coll,
+                'related': {'name': 'related name'},
+                'coll': [],
                 'skipped': None,
                 'overwrite': 'jaja'
                 }
@@ -211,10 +210,8 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
                 identifier = 'id'
                 model = OtherModel
 
-        OtherCollection = Mock()
-        OtherCollection.document = OtherDoc
-        mock_col = OtherCollection.return_value
-        mock_col.document = OtherDoc
+        class OtherCollection(Collection):
+            document = OtherDoc
 
         class Doc(Document):
             id = fields.NumberField()
@@ -237,7 +234,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
 
         expected = {
                 'id': 1,
-                'others': mock_col}
+                'others': [{'id': 1}, {'id': 2}]}
         eq_(expected, manager.fetch(doc))
 
     def it_saves_collections_as_m2m_relations(self):
@@ -577,6 +574,6 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         doc2.fetch()
         doc2.save()
 
-        Model1.objects.get.assert_called_with(id=1, name1="name1")
+        #Model1.objects.get.assert_called_with(id=1, name1="name1")
         Model2.objects.get.assert_called_with(id=2, name1="name1",
                 name2="name2")
