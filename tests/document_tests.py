@@ -729,32 +729,6 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_('name_field', doc.doc1.name)
         eq_(1, len(doc.doc1.col.collection_set))
 
-    def it_can_inherit_documents_and_options(self):
-        class DocBase(Document):
-            id = fields.NumberField()
-            name = fields.StringField()
-
-            class Meta:
-                backend_type = 'http'
-
-        class DocChild(DocBase):
-            class Meta:
-                backend_type = 'django'
-                model = Mock()
-                identifier = 'ident'
-
-        base_doc = DocBase()
-        child_doc = DocChild()
-
-        eq_(True, isinstance(
-            base_doc._backend_manager, HttpBackendManager))
-        eq_(True, isinstance(
-            child_doc._backend_manager, DjangoBackendManager))
-        eq_(['id'], base_doc._meta.identifier)
-        eq_(['ident'], child_doc._meta.identifier)
-        eq_(2, len(base_doc._meta.local_fields))
-        eq_(2, len(child_doc._meta.local_fields))
-
 
 class when_a_representation_is_parsed(unittest.TestCase):
     def setUp(self):
@@ -787,12 +761,33 @@ class when_a_document_inherits_from_another_document(unittest.TestCase):
         eq_(['id', 'key'], doc._meta.excludes)
         eq_(['id'], doc._meta.identifier)
 
-    def it_inherits_all_fields(self):
-        # that should be the total amount of fields for the inherited document
-        eq_(3, len(self.basket._meta.local_fields))
-        #eq_(True, 'is_present' in self.basket.fields)
-        #eq_(True, 'is_rotten' in self.basket.fields)
-        #eq_(True, 'name' in self.basket.fields)
+    def it_can_inherit_documents_and_options(self):
+        class DocBase(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+
+            class Meta:
+                backend_type = 'http'
+                identifier = 'ident'
+
+        class DocChild(DocBase):
+            another = fields.StringField()
+
+            class Meta:
+                backend_type = 'django'
+                model = Mock()
+
+        base_doc = DocBase()
+        child_doc = DocChild()
+
+        eq_(True, isinstance(
+            base_doc._backend_manager, HttpBackendManager))
+        eq_(True, isinstance(
+            child_doc._backend_manager, DjangoBackendManager))
+        eq_(['ident'], base_doc._meta.identifier)
+        eq_(['id'], child_doc._meta.identifier)
+        eq_(2, len(base_doc._meta.local_fields))
+        eq_(3, len(child_doc._meta.local_fields))
 
 
 class when_a_document_is_bound(unittest.TestCase):
