@@ -7,7 +7,7 @@ from mock import Mock
 from docar import documents
 from docar import fields
 from docar import Document, Collection
-from docar.backends import DjangoBackendManager
+from docar.backends import DjangoBackendManager, HttpBackendManager
 from docar.exceptions import BackendDoesNotExist, ValidationError
 
 from .app import Article
@@ -728,6 +728,32 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_(1, doc.doc1.id)
         eq_('name_field', doc.doc1.name)
         eq_(1, len(doc.doc1.col.collection_set))
+
+    def it_can_inherit_documents_and_options(self):
+        class DocBase(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+
+            class Meta:
+                backend_type = 'http'
+
+        class DocChild(DocBase):
+            class Meta:
+                backend_type = 'django'
+                model = Mock()
+                identifier = 'ident'
+
+        base_doc = DocBase()
+        child_doc = DocChild()
+
+        eq_(True, isinstance(
+            base_doc._backend_manager, HttpBackendManager))
+        eq_(True, isinstance(
+            child_doc._backend_manager, DjangoBackendManager))
+        eq_(['id'], base_doc._meta.identifier)
+        eq_(['ident'], child_doc._meta.identifier)
+        eq_(2, len(base_doc._meta.local_fields))
+        eq_(2, len(child_doc._meta.local_fields))
 
 
 class when_a_representation_is_parsed(unittest.TestCase):

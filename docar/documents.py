@@ -325,36 +325,6 @@ class Document(object):
 
         return obj
 
-    # def _prepare_save(self):
-    #     """Create a dict with the document state, and apply all
-    #     ``save_FIELD_field`` methods."""
-    #     #FIXME: Handle the fact if the document is not mapped to a model
-    #     data = {}
-
-    #     # populate the data_dict with the documents state
-    #     for field in self._meta.local_fields:
-    #         if hasattr(self, "save_%s_field" % field.name):
-    #             # We have a save method for this field
-    #             save_field = getattr(self, "save_%s_field" % field.name)
-    #             data[field.name] = save_field()
-    #         elif isinstance(getattr(self, field.name), type(None)):
-    #             # We also ignore any field that is set to None
-    #             continue
-    #         elif (field.optional is True
-    #                 and (isinstance(field, ForeignDocument)
-    #                     or isinstance(field, CollectionField))
-    #                 and (getattr(getattr(self, field.name),
-    #                     'bound') is False)):
-    #             # The field is optional and not bound, so we ignore it for the
-    #             # backend state. This should only be done for foreign documents
-    #             # and collections
-    #             continue
-    #         else:
-    #             # no save method found, map the field 1-1
-    #             data[field.name] = getattr(self, field.name)
-
-    #     return data
-
     def to_json(self):
         """Render this document as json."""
         return json.dumps(self.to_python())
@@ -454,7 +424,13 @@ class Document(object):
             try:
                 if isinstance(field, ForeignDocument):
                     document = getattr(self, field.name)
-                    document.validate()
+                    try:
+                        document.validate()
+                    except ValidationError, e:
+                        if field.optional and not document.bound:
+                            pass
+                        else:
+                            raise e
                 elif isinstance(field, CollectionField):
                     collection = getattr(self, field.name)
                     for document in collection.collection_set:

@@ -45,7 +45,9 @@ class Field(object):
         if hasattr(self, 'value'):
             # A static field, the value must be set anyway
             return
-        if ((value is None or value is "")
+        if ((value is None or value is ""
+            or isinstance(value, ForeignDocument)
+            or isinstance(value, CollectionField))
                 and not self.optional):
             raise ValidationError("Field must be set.")
         #TODO: blank values
