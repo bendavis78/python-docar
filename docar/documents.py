@@ -115,11 +115,6 @@ class DocumentBase(type):
             else:
                 setattr(new_class, field.name, field.default)
 
-        # create the related fields on the instance document
-        #FIXME: not sure if thats really needed
-        #for field in new_class._meta.related_fields:
-        #    setattr(new_class, "%s_id" % field.name, None)
-
         # Add the model manager if a model is set
         new_class._backend_manager = BackendManager(
                 new_class._meta.backend_type)
@@ -147,9 +142,12 @@ class Document(object):
     def __init__(self, data=None, context={}):
         """Create a new document presentation of a resource.
 
-        :param data: Initial values to use for this document.
+        :param data: Initial values to use for this document. Specify at least
+                     the identifier to be able to fetch the resource.
         :type data: dict
         :param context: Add additional context that can be used by the backend.
+                        Use this to provide extra values to be used by a
+                        backend that are not set in the representation.
         :type context: dict
 
         """
@@ -162,6 +160,9 @@ class Document(object):
         self._from_dict(data)
 
     def _to_dict(self):
+        """Return the document as a python dictionary. This method recursively
+        turns related documents and items of collections into dictionaries
+        too."""
         data = {}
 
         for field in self._meta.local_fields:
@@ -191,7 +192,8 @@ class Document(object):
         return data
 
     def _from_dict(self, obj):
-        """Create the document from a dict structure."""
+        """Create the document from a dict structure. It recursively builds
+        also related documents and collections from a dictionary input."""
         for item, value in obj.iteritems():
             if isinstance(value, dict):
                 field = [f for f in self._meta.related_fields
@@ -331,6 +333,8 @@ class Document(object):
         return obj
 
     def render(self):
+        """Return the document in render state. This includes URI links to
+        related resources and the document itself."""
         obj = self._render(self._to_dict())
 
         return obj
@@ -350,6 +354,8 @@ class Document(object):
         return data
 
     def validate(self):
+        """Validate the state of the document and throw a ``ValidationError``
+        if validation fails."""
         errors = {}
 
         for field in self._meta.local_fields:
@@ -386,12 +392,15 @@ class Document(object):
         return True
 
     def save(self, *args, **kwargs):
-        """Save the document in a django model backend."""
+        """Save the document to a backend. Any arguments given to this methos
+        is used when calling the underlying backend method."""
         self.validate()
 
         self._backend_manager.save(self, *args, **kwargs)
 
     def update(self, data, *args, **kwargs):
+        """Update a document from a dictionary. This is a convenience
+        method."""
         self.fetch(*args, **kwargs)
 
         # First update the own document state with the new values
@@ -408,11 +417,9 @@ class Document(object):
         obj = self._fetch(obj)
         self._from_dict(obj)
 
-    def delete(self, **kwargs):
+    def delete(self, *args, **kwargs):
         """Delete a model instance associated with this document."""
-        #self._backend_manager.delete(self._meta.identifier,
-        #        **self._prepare_save())
-        self._backend_manager.delete(self, **kwargs)
+        self._backend_manager.delete(self, *args, **kwargs)
 
     def uri(self):
         """Return the absolute uri for this resource.

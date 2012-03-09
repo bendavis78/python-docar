@@ -11,12 +11,11 @@ A lot of web services provide nowadays a REST interface and clients can
 communicate and manipulate state on the server by exchanging messages.
 ``python-docar`` provides a declarative style of defining those messages as
 documents, and makes it possible to resue the definitions on the server as well
-as on the client side. 
+as on the client side.
 
 A document maps to a resource, whereas it doesn't matter how this resource is
-expressed. The resource can be a database model or a HTTP endpoint.
-``python-docar`` implements at the moment a backend for django models and a
-backend for a http endpoint.
+stored. ``python-docar`` implements at the moment a backend for django models
+and a backend for a http endpoint.
 
 * Each message is declared as a python class that subclasses
   :class:`docar.Document`.
@@ -67,10 +66,10 @@ A quick example
         }
     }
 
-    >>> # A client example
+    >>> # A client example taling to a remote API endpoint
     >>> article = Article()
     >>> article.name = "Next Headline"
-    >>> article.create()
+    >>> article.save(username='user', password='pass')
     <class 'docar.http.HttpResponse'>
 
     >>> # You can also declare a collection of documents
@@ -110,21 +109,21 @@ A document exposes a simple API:
 Fetch the resource from the backend and bind the document to this resource.
 
 .. py:method:: Document.save(*args, **kwargs)
-  
+
 If the document does not exist on the backend, create it. Otherwise update the
 existing backend with information stored in the current document.
 
 .. py:method:: Document.delete(*args, **kwargs)
-  
+
 Delete the current resource from the backend.
 
 .. py:method:: Document.to_python()
-  
+
 Render the document into a python dictionary. The process adds met information
 such as the link to itself to the representation.
 
 .. py:method:: Document.to_json()
-  
+
 Render the document to a json string. This basically serializes the result from
 :meth:`~Document.to_python`.
 
@@ -156,6 +155,12 @@ python dictionary::
         "id": None,
         "name": ""
     }
+
+.. py:method:: Document.validate()
+
+Validate the fields of the document. It validates the correct datatypes of the
+fields. You can also attach validator functions to a fields that can validate
+additional aspects of the field.
 
 ``Meta``
 --------
@@ -207,13 +212,20 @@ must be a class and **can't** be a string::
         class Meta:
             model = ArticleModel
 
+.. py:attribute:: Meta.context
+
+A list of strings that specify which additional context variables are used by
+this document. See the sections about `Document Context`_ for more information.
+
+Document Context
+----------------
 
 Fields
 ======
 
 Documents declare their attributes using fields set as class attributes. The
 name of a field maps straight to the name of a field of the underlying
-resource. See `Map Fields`_ for a way to use a different field name for the
+resource. See `Mapping Fields`_ for a way to use a different field name for the
 document and the resource.
 
 Example
@@ -250,6 +262,77 @@ default value is used when interacting with the backend.
 
 Control whether to scaffold this field. Defaults to ``True``.
 
+``render``
+~~~~~~~~~~
+
+.. py:attribute:: Fields.render
+
+If set to ``False`` the field gets ignored when the document gets rendered.
+Defaults to ``True``.
+
+``inline``
+~~~~~~~~~~
+
+Normally ``ForeignDocuments`` and ``CollectionFields`` render as a reference
+with a resource URI link and a relation attribute. When you specify the
+``inline`` field option, you can force the field to render as an inline
+element.
+
+Example
+
+.. code-block:: python
+
+    class Doc1(Document):
+        id = fields.NumberField()
+        name = fields.StringField()
+
+        def uri(self):
+            return "http://example.org/doc/%s" % self.id
+
+    class Doc2(Document):
+        id = fields.NumberField()
+        doc_inline = fields.ForeignDocument(Doc1, inline=True)
+        doc1 = fields.ForeignDocument(Doc1)
+
+    d = Doc2()
+    d.fetch()
+    d.render()
+    {
+        "id": 1,
+        "doc1": {
+            "id": 1,
+            "rel": "related",
+            "href": "http://example.org/doc/1/"
+            },
+        "doc_inline": {
+            "id": 2,
+            "name": "doc_inline"
+            }
+    }
+
+``validate``
+~~~~~~~~~~~~
+
+Specify whether to validate the field or not. Defaults to ``True``. If
+disabled, validation is skipped for this field.
+
+``validators``
+~~~~~~~~~~~~~~
+
+You can add a list of functions that will be called when validating the field.
+For details on those functions see the section about `Validation`_.
+
+Example
+
+.. code-block:: python
+
+    def validate_name(value):
+        # Do something
+
+    class Article(Document):
+        id = fields.NumberField()
+        name = fields.StringField(validators=[validate_name])
+
 Field Types
 -----------
 
@@ -283,8 +366,11 @@ Field Types
 
 .. py:class:: CollectionField(**options)
 
-Map Fields
-----------
+Mapping Fields
+--------------
+
+``map_FIELD_field``
+~~~~~~~~~~~~~~~~~~~
 
 You can map a field name between the document and the underlying resource by
 implementing a :meth:`map_FIELD_field` method where ``FIELD`` is the name of
@@ -314,10 +400,52 @@ In the above example the document defines a field ``name``. For any operation
 with the underlying resource, it will map ``name`` to ``long_title``.
 
 ``fetch_FIELD_field``
+~~~~~~~~~~~~~~~~~~~~~
 
-``render_FIELD_field``
+You can map values that are fetched from a backend and set a different value on
+the document. Specify a ``fetch_FIELD_field`` method on the document, and it
+will be called whenever a representation gets fetched.
+
+The method takes only one argument, which is the value originaly fetched from
+the backend.
+
+.. code-block:: python
+
+    class Article(Document):
+        id = fields.NumberField()
+        name = fields.StringField()
+
+        class Meta:
+            backend_type = 'http'
+
+        fetch_name_field(self, value):
+            if value == "some string":
+                return value
+            else:
+                return "UNKNOWN"
+
+    >>> art = Article({'id': 1})
+    >>> # this fetches a resource that looks like that:
+    >>> # {"id": 1, "name": "something"}
+    >>> art.fetch()
+    >>> art.name
+    UNKNOWN
 
 ``save_FIELD_field``
+~~~~~~~~~~~~~~~~~~~~
+
+You can as well map field values before sending the document to the backend
+for saving the resource. It works the same as for fetching field described
+above, you only specify a ``save_FIELD_field`` method on the document.
+
+``render_FIELD_field``
+~~~~~~~~~~~~~~~~~~~~~~
+
+To change the rendering of the field use a ``render_FIELD_field`` method. Use
+it the same as fetch or save mapping method described above.
+
+Validation
+----------
 
 Collections
 ===========
@@ -326,7 +454,20 @@ Backends
 ========
 
 The backends are the real meat of the documents. Where the document defines what
-you can do, the backends implement the how of it. 
+you can do, the backends implement the how of it. Documents and backends use
+dictionary to communicate to each other. A backend expects a dictionary
+representation of the document, applies it as needed, and returns the resource
+as a dictionary again. Each backend must implement the following methods:
+
+``fetch``
+  Fetch the resource from the underlying backend. Returns a dictionary.
+
+``save``
+  Save the document to the resource in the underlying backend. Expects a
+  dictionary representation of the document.
+
+``delete``
+  Delete the resource from the underlying backend.
 
 HTTP Backend
 ------------
@@ -347,7 +488,9 @@ This backend uses the :meth:`~Document.uri` method to determine its API
 endpoint. You can implement specific uri methods for each HTTP verb to be more
 precise. If a http specific uri method is not found, it will fallback to the
 default :meth:`~Document.uri` method. The form of those methods is
-``verb_uri``::
+``verb_uri``.
+
+.. code-block:: python
 
     class Article(Document):
         id = fields.NumberField()
