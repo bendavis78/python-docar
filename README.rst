@@ -24,7 +24,7 @@ It is planned to provide more dialects (like xml) or the possibility to
 override the builtin serializers.
 
 For the full documentation, either `build it yourself`_ or visit the online
-documentation ad readthedocs: http://readthedocs.org/docs/python-docar/
+documentation at readthedocs: http://readthedocs.org/docs/python-docar/
 
 Report any issues on the `issue tracker`_ of github. For any questions, send me
 a mail at crito[AT]30loops.net.
