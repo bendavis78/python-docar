@@ -16,19 +16,22 @@ mapper are possible.
 
 The same document definitions can be reused on the client side. In the future
 it will come with a http client that can craft messages and send them right
-away to the server applications.
-
-In the future those declarations should be able to enforce validation on those
-documents. That means, that on the client you can validate the message prior to
-sending the HTTP request and on the server prior to saving the resource to the
-data store.
+away to the server applications. Those documents can be validated, on the
+client side as well as on the server side.
 
 At the moment the only messaging format supported is a very simple JSON format.
 It is planned to provide more dialects (like xml) or the possibility to
 override the builtin serializers.
 
+For the full documentation, either `build it yourself`_ or visit the online
+documentation ad readthedocs: http://readthedocs.org/docs/python-docar/
+
+Report any issues on the `issue tracker`_ of github. For any questions, send me
+a mail at crito[AT]30loops.net.
+
 ``python-docar`` is heavily influenced by roar_.
 
+.. _`issue tracker`: https://github.com/30loops/python-docar/issues
 .. _roar: https://github.com/apotonick/roar
 
 Example
@@ -48,7 +51,7 @@ start using the django backend::
             backend_type = 'django'
             model = AuthorModel
             identifier = 'name'
-        
+
     class BlogEntry(Document):
         id = fields.NumberField()
         title = fields.StringField()
@@ -122,5 +125,22 @@ Development
 
 This module comes along with a thorough test suite. Run it the following way::
 
-    $ cd python-docar
     $ python setup.py nosetests
+
+.. _`build it yourself`:
+
+Documentation
+=============
+
+To build the documentation you need sphinx installed::
+
+    $ cd docs
+    $ make html
+
+You find the documentation in ``docs/_build/html/``.
+
+Disclaimer
+==========
+
+The use of this software comes without any warranty. It is released under a BSD
+license. See ``LICENSE`` for details.
