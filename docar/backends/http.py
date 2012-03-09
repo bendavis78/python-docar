@@ -35,7 +35,7 @@ class HttpBackendManager(object):
                 # Fetch the document again to create a dict from it
                 Document = field.Document
                 kwargs = related_instance
-                doc = Document(kwargs)
+                doc = Document(kwargs, context=document._context)
                 # To avoid a new fetch, set the instance manualy, needed for
                 # the uri method
                 if self._get_uri('get', doc):
@@ -76,7 +76,7 @@ class HttpBackendManager(object):
                 # else:
                 select_dict[elem] = item[elem]
             # now we request the actual document, bound to a backend resource
-            doc = collection.document(select_dict)
+            doc = collection.document(select_dict, context=context)
             # # We dont need to fetch the object again
             doc._backend_manager.instance = item
             if (hasattr(self, 'username') and hasattr(self, 'password')):

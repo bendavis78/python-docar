@@ -297,7 +297,7 @@ class Document(object):
                 collection.collection_set = []
                 Document = collection.document
                 for elem in value:
-                    document = Document(elem)
+                    document = Document(elem, context=self._context)
                     document._fetch(elem)
                     collection.add(document)
                 data[item] = collection
@@ -353,7 +353,8 @@ class Document(object):
         errors = {}
 
         for field in self._meta.local_fields:
-            print field.name
+            if isinstance(getattr(self, field.name), type(None)):
+                continue
             try:
                 if isinstance(field, ForeignDocument):
                     document = getattr(self, field.name)
