@@ -63,29 +63,23 @@ class DjangoBackendManager(object):
         relation = getattr(instance, instance_field_name)
 
         for item in relation.all():
-            select_dict = {}
-            # we first create an empty document, to have access to the fetch
-            # methods
-            doc = collection.document()
-            for elem in collection.document._meta.identifier:
-                if hasattr(doc, "fetch_%s_field" % elem):
-                    fetch_field = getattr(doc, "fetch_%s_field" % elem)
-                    select_dict[elem] = fetch_field()
-                else:
-                    select_dict[elem] = getattr(item, elem)
-            # now we request the actual document, bound to a backend resource
-            doc = collection.document(select_dict)
+            # we first create an empty document
+            doc = collection.document({}, context=context)
+
             # We dont need to fetch the object again
             doc._backend_manager.instance = item
+
             # we shortcut here the fetch mechanism, turn it into a dict
             # representation on set the attributes correctly
             obj = doc._backend_manager._to_dict(doc)
-            for k, v in obj.iteritems():
-                setattr(doc, k, v)
+            obj = doc._fetch(obj)
+            doc._from_dict(obj)
+
             collection.add(doc)
+
         return collection._to_dict()
 
-    def fetch(self, document, **kwargs):
+    def fetch(self, document, *args, **kwargs):
         select_dict = document._identifier_state()
         select_dict.update(document._get_context())
 
@@ -98,7 +92,7 @@ class DjangoBackendManager(object):
 
         return self._to_dict(document)
 
-    def save(self, document, **kwargs):
+    def save(self, document, *args, **kwargs):
         m2m_relations = []
 
         # we call this method to make sure we run all save_FIELD_field methods
@@ -192,6 +186,11 @@ class DjangoBackendManager(object):
                         defered_m2m.append((field, defered_name, getattr(doc,
                             defered_name)))
                         del(doc_state[defered_name])
+                    elif (hasattr(field, 'Document')
+                            and defered_name in doc_state):
+                        document = field.Document(doc_state[defered_name])
+                        document.save()
+                        doc_state[defered_name] = document._backend_manager.instance
 
                 # create or update the relation object
                 model = m2m.__dict__['model']

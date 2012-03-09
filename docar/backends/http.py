@@ -27,6 +27,12 @@ class HttpBackendManager(object):
             if isinstance(field, ForeignDocument):
                 kwargs = {}
                 related_instance = instance[instance_field_name]
+                if field.inline:
+                    # The field is rendered inline, so we dont have to fetch it
+                    # again.
+                    data[field.name] = related_instance
+                    continue
+                # Fetch the document again to create a dict from it
                 Document = field.Document
                 kwargs = related_instance
                 doc = Document(kwargs)
@@ -37,7 +43,10 @@ class HttpBackendManager(object):
                 else:
                     data[field.name] = related_instance
             elif isinstance(field, CollectionField):
-                data[field.name] = self._get_collection(field,
+                if field.inline:
+                    data[field.name] = instance[instance_field_name]
+                else:
+                    data[field.name] = self._get_collection(field,
                         context=document._context)
             elif field.name in instance:
                 # Otherwise set the value of the field from the retrieved model
@@ -61,22 +70,21 @@ class HttpBackendManager(object):
             # methods
             doc = collection.document()
             for elem in collection.document._meta.identifier:
-                if hasattr(doc, "fetch_%s_field" % elem):
-                    fetch_field = getattr(doc, "fetch_%s_field" % elem)
-                    select_dict[elem] = fetch_field()
-                else:
-                    select_dict[elem] = item[elem]
+                # if hasattr(doc, "fetch_%s_field" % elem):
+                #     fetch_field = getattr(doc, "fetch_%s_field" % elem)
+                #     select_dict[elem] = fetch_field()
+                # else:
+                select_dict[elem] = item[elem]
             # now we request the actual document, bound to a backend resource
             doc = collection.document(select_dict)
-            # We dont need to fetch the object again
+            # # We dont need to fetch the object again
             doc._backend_manager.instance = item
-            # we shortcut here the fetch mechanism, turn it into a dict
-            # representation on set the attributes correctly
-            obj = doc._backend_manager._to_dict(doc)
-            for k, v in obj.iteritems():
-                setattr(doc, k, v)
+            if (hasattr(self, 'username') and hasattr(self, 'password')):
+                doc.fetch(username=self.username, password=self.password)
+            else:
+                doc.fetch()
             collection.add(doc)
-        return collection
+        return collection._to_dict()
 
     def _get_uri(self, verb, document):
         if hasattr(document, "%s_uri" % verb):
@@ -91,10 +99,10 @@ class HttpBackendManager(object):
     def fetch(self, document, *args, **kwargs):
         params = {}
         self.kwargs = kwargs
-        if 'auth' in kwargs:
-            params['auth'] = self.auth
-        elif 'username' in kwargs and 'password' in kwargs:
+        if 'username' in kwargs and 'password' in kwargs:
             # we enable authentication
+            self.username = kwargs['username']
+            self.password = kwargs['password']
             auth = HTTPBasicAuth(kwargs['username'], kwargs['password'])
             params['auth'] = auth
         if self.SSL_CERT:
@@ -137,10 +145,10 @@ class HttpBackendManager(object):
                 setattr(document, name, doc_state[name])
             if hasattr(field, 'Collection'):
                 coll = getattr(document, name)
-                doc_state[name] = coll._prepare_render()
+                doc_state[name] = coll._to_dict()
             elif hasattr(field, 'Document'):
                 doc = getattr(document, name)
-                doc_state[name] = doc._prepare_render()
+                doc_state[name] = doc._to_dict()
 
         data = json.dumps(doc_state)
         params['data'] = data

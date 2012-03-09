@@ -174,6 +174,9 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
                 backend_type = 'http'
                 identifier = 'other'
 
+            def uri(self):
+                return "http://col_location"
+
         class Other2(Document):
             other = fields.StringField()
 
@@ -191,7 +194,7 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
             id = fields.NumberField()
             name = fields.StringField()
             pub = fields.BooleanField()
-            ext = fields.ForeignDocument(Other)
+            ext = fields.ForeignDocument(Other, inline=True)
             ext2 = fields.ForeignDocument(Other2)
             col = fields.CollectionField(OtherCol)
             optional = fields.StringField()
@@ -233,7 +236,15 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
         response_other.content = json.dumps(expected_other2)
         response_other.status_code = 200
 
-        responses = [response_other, response_doc]
+        response_col1 = Mock(name='mock_http_other_response')
+        response_col1.content = json.dumps(expected['col'][0])
+        response_col1.status_code = 200
+
+        response_col2 = Mock(name='mock_http_other_response')
+        response_col2.content = json.dumps(expected['col'][1])
+        response_col2.status_code = 200
+
+        responses = [response_col1, response_col2, response_other, response_doc]
         def response_side_effect(*args, **kwargs):
             return responses.pop()
 
@@ -256,7 +267,10 @@ class when_a_http_client_document_is_instantiated(unittest.TestCase):
 
         # we should have made one GET request
         eq_([('get', {'url': 'http://location'}),
-            ('get', {'url': 'http://other_location'})],
+            ('get', {'url': 'http://other_location'}),
+            ('get', {'url': 'http://col_location'}),
+            ('get', {'url': 'http://col_location'}),
+            ],
                 self.mock_request.method_calls)
 
     def it_can_update_the_document_on_the_remote_backend(self):

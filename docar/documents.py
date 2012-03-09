@@ -159,49 +159,15 @@ class Document(object):
             return
 
         self._context = context
-
-        # set the preloaded attributes
-        for field_name, val in data.items():
-            # We set simple fields, defer references and collections
-            # FIXME: Shouldn't the validator do that???
-            if type(val) == types.UnicodeType or \
-                    type(val) == types.StringType or \
-                    type(val) == types.BooleanType or \
-                    type(val) == types.IntType:
-                setattr(self, field_name, val)
-            elif type(val) == types.ListType:
-                # Create a collection containing the list items
-                collection = getattr(self, field_name)
-                # for each member of the list, create a document, and add it to
-                # the collection
-                for item in val:
-                    doc = collection.document(item)
-                    collection.add(doc)
-                if len(collection.collection_set) > 0:
-                    # If we have at least one member in the collection, we
-                    # regard it as bound
-                    collection.bound = True
-                # set the collection as document attribute
-                setattr(self, field_name, collection)
-            elif type(val) == types.DictType:
-                # We got ourselve a foreign document
-                Document = [field.Document
-                        for field in self._meta.related_fields
-                        if field.name in field_name]
-                if not Document:
-                    # If we didn't find it in the related_fields list, its not
-                    # a foreign document, so we ignore this dict field
-                    continue
-                # create the appropriate document and set it as an attribute
-                doc = Document[0](data=val, context=context)
-                # We have a bound foreign document
-                doc.bound = True
-                setattr(self, field_name, doc)
+        self._from_dict(data)
 
     def _to_dict(self):
         data = {}
 
         for field in self._meta.local_fields:
+            if field.optional and not getattr(self, field.name):
+                # The field is optional and none, ignore it
+                continue
             if (field.optional is True
                     and (isinstance(field, ForeignDocument)
                         or isinstance(field, CollectionField))
@@ -228,12 +194,12 @@ class Document(object):
         """Create the document from a dict structure."""
         for item, value in obj.iteritems():
             if isinstance(value, dict):
-                Document = [field.Document
-                        for field in self._meta.related_fields
-                        if field.name in item]
+                field = [f for f in self._meta.related_fields
+                        if f.name == item][0]
+                Document = field.Document
                 # Lets create a new relation
-                document = Document[0]()
-                document._from_dict(value)
+                document = Document(value, context=self._context)
+                document.bound = True
                 setattr(self, item, document)
             elif isinstance(value, list):
                 # a collection
@@ -241,12 +207,52 @@ class Document(object):
                 collection.collection_set = []
                 Document = collection.document
                 for elem in value:
-                    document = Document()
-                    document._from_dict(elem)
+                    document = Document(elem, context=self._context)
                     collection.add(document)
+                if len(collection.collection_set) > 0:
+                    # If we have at least one member in the collection, we
+                    # regard it as bound
+                    collection.bound = True
                 setattr(self, item, collection)
             else:
                 setattr(self, item, value)
+
+    def _render(self, obj):
+        data = {}
+
+        for item, value in obj.iteritems():
+            field = [f for f in self._meta.local_fields 
+                        if f.name == item][0]
+            if not field.render:
+                continue
+            if hasattr(self, "render_%s_field" % item):
+                render_field = getattr(self, "render_%s_field" % item)
+                value = render_field(value)
+            if isinstance(value, dict):
+                # Lets create a new relation
+                document = getattr(self, item)
+                #value = document._fetch(value)
+                #data[item] = value
+                if field.inline:
+                    # we render the field inline
+                    data[item] = document._to_dict()
+                else:
+                    data[item] = {
+                            'rel': 'related',
+                            'href': document.uri()}
+                    # Also add the identifier fields into the rendered output
+                    identifiers = {}
+                    for id_field in document._meta.identifier:
+                        identifiers[id_field] = getattr(document, id_field)
+                    data[item].update(identifiers)
+            elif isinstance(value, list):
+                # we render a collection
+                collection = getattr(self, item)
+                data[item] = collection._render()
+            else:
+                data[item] = value
+
+        return data
 
     def _save(self):
         data = {}
@@ -279,20 +285,19 @@ class Document(object):
         for item, value in obj.iteritems():
             if hasattr(self, "fetch_%s_field" % item):
                 fetch_field = getattr(self, "fetch_%s_field" % item)
-                #TODO: give the original value to the fetch method as argument
-                value = fetch_field()
+                value = fetch_field(value)
             if isinstance(value, dict):
                 # Lets create a new relation
                 document = getattr(self, item)
                 value = document._fetch(value)
                 data[item] = value
             elif isinstance(value, list):
-                # we dissovle a collection
+                # we fetch a collection
                 collection = getattr(self, item)
                 collection.collection_set = []
                 Document = collection.document
                 for elem in value:
-                    document = Document()
+                    document = Document(elem)
                     document._fetch(elem)
                     collection.add(document)
                 data[item] = collection
@@ -304,10 +309,10 @@ class Document(object):
     def _identifier_state(self):
         data = {}
         for elem in self._meta.identifier:
-            if hasattr(self, "fetch_%s_field" % elem):
-                fetch_field = getattr(self, "fetch_%s_field" % elem)
-                data[elem] = fetch_field()
-            elif hasattr(self, "save_%s_field" % elem):
+            # if hasattr(self, "fetch_%s_field" % elem):
+            #     fetch_field = getattr(self, "fetch_%s_field" % elem)
+            #     data[elem] = fetch_field(getattr(self, elem))
+            if hasattr(self, "save_%s_field" % elem):
                 save_field = getattr(self, "save_%s_field" % elem)
                 data[elem] = save_field()
             else:
@@ -325,13 +330,18 @@ class Document(object):
 
         return obj
 
+    def render(self):
+        obj = self._render(self._to_dict())
+
+        return obj
+
     def to_json(self):
         """Render this document as json."""
         return json.dumps(self.to_python())
 
     def to_python(self):
         """Render this document to a python dictionary."""
-        data = self._prepare_render()
+        data = self.render()
 
         # add the link to itself
         data['link'] = {
@@ -339,88 +349,11 @@ class Document(object):
                 'href': self.uri()}
         return data
 
-    def _prepare_render(self):
-        """Create a proper python dict that can be further rendered."""
-        data = {}
-        related = {}
-
-        # Cycle all registered fields, and fill the data dict
-        for field in self._meta.local_fields:
-            if field.optional and not getattr(self, field.name):
-                # The field is optional and not set, ignore it
-                continue
-            elif not field.render:
-                continue
-            elif hasattr(self, "render_%s_field" % field.name):
-                # We have a render method for this field
-                render_field = getattr(self, "render_%s_field" % field.name)
-                data[field.name] = render_field()
-                # skip to the next iteration
-                continue
-            elif isinstance(field, ForeignDocument):
-                # fill the related dict
-                elem = getattr(self, field.name)
-                if not elem.bound and field.optional:
-                    # we don't render foreign documents that are optional and
-                    # not set.
-                    continue
-                if field.inline:
-                    # we render the field inline
-                    related[field.name] = elem._prepare_render()
-                else:
-                    related[field.name] = {
-                            'rel': 'related',
-                            'href': elem.uri()}
-                    # Also add the identifier fields into the rendered output
-                    identifiers = {}
-                    for id_field in elem._meta.identifier:
-                        identifiers[id_field] = getattr(elem, id_field)
-                    related[field.name].update(identifiers)
-
-            elif isinstance(field, CollectionField):
-                attr = getattr(self, field.name)
-                data[field.name] = attr._prepare_render()
-            else:
-                data[field.name] = getattr(self, field.name)
-        # update the data dict with the related fields
-        data.update(related)
-
-        return data
-
-    def _init_from_dict(self, obj):
-        """Set the document state from this dictionary."""
-        for k, v in obj.iteritems():
-            if isinstance(v, dict):
-                # assume a foreign document
-                doc = getattr(self, k)
-                Document = [field.Document
-                        for field in self._meta.related_fields
-                        if field.name in k]
-                if not Document:
-                    # If we didn't find it in the related_fields list, its not
-                    # a foreign document, so we ignore this dict field
-                    continue
-                doc = Document[0](v, context=self._context)
-                doc.bound = True
-                doc._init_from_dict(v)
-                setattr(self, k, doc)
-            elif isinstance(v, list):
-                col = getattr(self, k)
-                col.collection_set = []
-                col.bound = False
-                for item in v:
-                    doc = col.document(item, context=self._context)
-                    doc.bound = True
-                    doc._init_from_dict(item)
-                    col.add(doc)
-                setattr(self, k, col)
-            else:
-                setattr(self, k, v)
-
     def validate(self):
         errors = {}
 
         for field in self._meta.local_fields:
+            print field.name
             try:
                 if isinstance(field, ForeignDocument):
                     document = getattr(self, field.name)
@@ -436,7 +369,13 @@ class Document(object):
                     for document in collection.collection_set:
                         document.validate()
                 else:
-                    field.clean(getattr(self, field.name))
+                    value = getattr(self, field.name)
+                    if ((isinstance(value, type(None))
+                            or (isinstance(value, str) and value in ""))
+                            and field.optional):
+                        # we don't validate optional fields that are not set
+                        continue
+                    field.clean(value)
             except ValidationError, e:
                 errors[field.name] = e.message
 
@@ -455,16 +394,16 @@ class Document(object):
         self.fetch(*args, **kwargs)
 
         # First update the own document state with the new values
-        self._init_from_dict(data)
+        self._from_dict(data)
 
         # save the representation to the model
         self.save(*args, **kwargs)
 
-    def fetch(self, **kwargs):
+    def fetch(self, *args, **kwargs):
         """Fetch the model from the backend to create the representation of
         this resource."""
         # Retrieve the object from the backend
-        obj = self._backend_manager.fetch(self, **kwargs)
+        obj = self._backend_manager.fetch(self, *args, **kwargs)
         obj = self._fetch(obj)
         self._from_dict(obj)
 

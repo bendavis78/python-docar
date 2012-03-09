@@ -11,13 +11,14 @@ class Field(object):
     default_validators = []
 
     def __init__(self, default=NOT_PROVIDED, optional=False, context=[],
-            render=True, scaffold=True, validators=[]):
+            render=True, scaffold=True, validators=[], validate=True):
         self.default = default
         self.optional = optional
         self.context = context
         self.render = render
         self.scaffold = scaffold
         self.validators = self.default_validators + validators
+        self.validate = validate
 
         # Set the creation counter. Increment it for each field declaration
         self.creation_counter = Field.creation_counter
@@ -41,7 +42,7 @@ class Field(object):
         for validator in self.validators:
             validator(value)
 
-    def validate(self, value):
+    def validate_field(self, value):
         if hasattr(self, 'value'):
             # A static field, the value must be set anyway
             return
@@ -54,8 +55,11 @@ class Field(object):
         #TODO: choices
 
     def clean(self, value):
+        if not self.validate:
+            return self.to_python(value)
+
         value = self.to_python(value)
-        self.validate(value)
+        self.validate_field(value)
         self.run_validators(value)
 
         return value
@@ -124,6 +128,11 @@ class CollectionField(Field):
 
     def __init__(self, *args, **kwargs):
         self.Collection = args[0]
+        if 'inline' in kwargs:
+            self.inline = kwargs['inline']
+            del(kwargs['inline'])
+        else:
+            self.inline = False
         super(CollectionField, self).__init__(**kwargs)
 
     def contribute_to_class(self, cls, name):

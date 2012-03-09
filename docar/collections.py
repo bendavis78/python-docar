@@ -50,7 +50,23 @@ class Collection(object):
             doc.fetch()
             self.add(doc)
 
-    def _prepare_render(self):
+    # def _prepare_render(self):
+    #     data = []
+    #     for document in self.collection_set:
+    #         item = {"rel": "item"}
+
+    #         #FIXME: Design decision needed, if I enable this, I get into
+    #         # troubles when rendering related (m2m) instances and they lack the
+    #         # parent instance as select field.
+    #         #document.fetch()
+    #         item["href"] = document.uri()
+    #         for elem in document._meta.identifier:
+    #             item[elem] = getattr(document, elem)
+    #         data.append(item)
+
+    #     return data
+
+    def _render(self):
         data = []
         for document in self.collection_set:
             item = {"rel": "item"}
@@ -74,4 +90,4 @@ class Collection(object):
         return data
 
     def to_json(self):
-        return json.dumps(self._prepare_render())
+        return json.dumps(self._render())
