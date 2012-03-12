@@ -121,17 +121,16 @@ class DjangoBackendManager(object):
                 # a foreign document means we have to retrieve it from the
                 # model
                 doc = getattr(document, name)
-                if doc.bound:
-                    # Don't try to save or fetch if the document isn't bound,
-                    # won't do us any good.
-                    #try:
-                    #    doc.fetch()
-                    #except BackendDoesNotExist:
+                # Don't try to save or fetch if the document isn't bound,
+                # won't do us any good.
+                try:
+                    doc.fetch()
+                except BackendDoesNotExist:
                     #FIXME: make sure it doesn't throw an exception
                     doc.save()
 
-                    instance = doc._backend_manager.instance
-                    doc_state[name] = instance
+                instance = doc._backend_manager.instance
+                doc_state[name] = instance
 
         # add the additional context in retrieving the model instance
         doc_state.update(document._get_context())
@@ -188,6 +187,7 @@ class DjangoBackendManager(object):
                         del(doc_state[defered_name])
                     elif (hasattr(field, 'Document')
                             and defered_name in doc_state):
+                        print doc_state[defered_name]
                         document = field.Document(doc_state[defered_name])
                         document.save()
                         doc_state[defered_name] = document._backend_manager.instance
