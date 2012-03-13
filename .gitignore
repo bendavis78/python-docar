@@ -5,6 +5,7 @@ cover
 docs/_build
 dist
 build
+tags
 docar.egg-info
 src/.ropeproject
 *.pyc
