@@ -165,9 +165,18 @@ class DjangoBackendManager(object):
         # set the m2m relations
         defered_m2m = []
         for field, local_name, collection in m2m_relations:
-            if len(collection.collection_set) < 1:
-                continue
             m2m = getattr(instance, local_name)
+            # We store all current m2m items so that we can match it against
+            # the current collection and remove any excess items at the end
+            current_m2m_items = m2m.all()
+
+            # We dont bother about this collection if its empty
+            if len(collection.collection_set) < 1:
+                # Delete the instances on the backend belonging to this m2m
+                # relation
+                for item in current_m2m_items:
+                    item.delete()
+                continue
             for doc in collection.collection_set:
                 doc_state = doc._save()
 
@@ -201,12 +210,20 @@ class DjangoBackendManager(object):
                     for k, v in doc_state.items():
                         setattr(inst, k, v)
                     inst.save()
+                    # Remove this item from the current_m2m_items list so that
+                    # we dont delete it at the end
+                    current_m2m_items = current_m2m_items.exclude(
+                            **doc._identifier_state())
                 except model.DoesNotExist:
                     inst = m2m.create(**doc_state)
 
                 # now recursively add the nested collections
                 if len(defered_m2m) > 0:
                     self._save_m2m_relations(inst, defered_m2m)
+
+            # We delete all excess items of this m2m relation.
+            for item in current_m2m_items:
+                item.delete()
 
     def delete(self, document, **kwargs):
         try:

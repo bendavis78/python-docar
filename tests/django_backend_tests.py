@@ -282,8 +282,21 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         def se(*args, **kwargs):
             return collection_model.pop()
 
+        # I have to mock a queryset for each collection, cause I run an exclude
+        # on it everytime I iterate through an item of the collection
+        qs_col = Mock(name="queryset")
+        qs_col.__iter__ = Mock(
+                return_value=iter([mock_doc1_1, mock_doc1_2]))
+        qs_cola = Mock(name="queryset-exclude_cola")
+        qs_cola.__iter__ = Mock(return_value=iter([mock_doc1_2]))
+        qs_col.exclude.return_value = qs_cola
+        qs_colb = Mock(name="queryset-exclude_colb")
+        qs_colb.__iter__ = Mock(return_value=iter([]))
+        qs_cola.exclude.return_value = qs_colb
+
         mock_doc2.col = Mock()
         mock_doc2.col.__dict__['model'] = Doc1Model
+        mock_doc2.col.all.return_value = qs_col
         mock_doc2.col.get.side_effect = se
         mock_doc2.col.get.return_value = True
 
@@ -479,16 +492,38 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         mock_doc3.doc2 = Mock()
         mock_doc3.doc2.__dict__['model'] = Doc2Model
         Doc3Model.return_value = mock_doc3
+
         mock_doc2 = Mock()
         mock_doc2.__dict__['model'] = Doc2Model
         mock_doc2.id = 2
         mock_doc2.doc1_map = Mock(name='doc1_map')
         mock_doc2.doc1_map.__dict__['model'] = Doc1Model
+
+        # I have to mock a queryset for each collection, cause I run an exclude
+        # on it everytime I iterate through an item of the collection
+        qs_doc2 = Mock(name="queryset2")
+        qs_doc2.__iter__ = Mock(
+                return_value=iter([mock_doc2]))
+        qs_doc2a = Mock(name="queryset-exclude_doc2")
+        qs_doc2a.__iter__ = Mock(return_value=iter([]))
+        qs_doc2.exclude.return_value = qs_doc2a
+
+        mock_doc3.doc2.all.return_value = qs_doc2
         mock_doc3.doc2.create.return_value = mock_doc2
         mock_doc3.doc2.get.return_value = mock_doc2
+
         mock_doc1 = Mock()
         mock_doc1.__dict__['model'] = Doc1Model
         mock_doc1.id = 3
+
+        qs_doc1 = Mock(name="queryset1")
+        qs_doc1.__iter__ = Mock(
+                return_value=iter([mock_doc1]))
+        qs_doc1a = Mock(name="queryset-exclude_doc1")
+        qs_doc1a.__iter__ = Mock(return_value=iter([]))
+        qs_doc1.exclude.return_value = qs_doc1a
+
+        mock_doc2.doc1_map.all.return_value = qs_doc1
         mock_doc2.doc1_map.get.return_value = mock_doc1
         mock_doc2.doc1_map.create.return_value = mock_doc1
 
@@ -577,3 +612,74 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         #Model1.objects.get.assert_called_with(id=1, name1="name1")
         Model2.objects.get.assert_called_with(id=2, name1="name1",
                 name2="name2")
+
+    def it_can_delete_items_from_a_m2m_relation(self):
+        Model1 = Mock()
+        Model2 = Mock()
+
+        class Doc1(Document):
+            id = fields.NumberField()
+
+            class Meta:
+                model = Model1
+
+        class Col1(Collection):
+            document = Doc1
+
+        class Doc2(Document):
+            id = fields.NumberField()
+            col1 = fields.CollectionField(Col1)
+
+            class Meta:
+                model = Model2
+
+        # First return an existing model instance
+        mock_doc1a = Mock()
+        mock_doc1a.id = 1
+        mock_doc1a.__dict__['model'] = Model1
+
+        mock_doc1b = Mock()
+        mock_doc1b.id = 2
+        mock_doc1b.__dict__['model'] = Model1
+
+        m2m_relation = Mock(name="m2m_relation")
+        mock_doc2 = Mock()
+        mock_doc2.col1 = m2m_relation
+        mock_doc2.id = 3
+        mock_doc2.col1.__dict__['model'] = Model1
+
+        # The fetch for the foreign document will raise a BackendDoesNotExist
+        # and therefore creates a new model instance
+        Model2.objects.get.return_value = mock_doc2
+
+        m2m_relation.all.return_value = [mock_doc1a, mock_doc1b]
+
+        doc = Doc2({'id': 1, 'col1':[]})
+        doc.save()
+
+        # If the collection is empty we make sure that the backend instances
+        # are delete too
+        eq_(True, mock_doc1a.delete.called)
+        eq_(True, mock_doc1b.delete.called)
+
+        mock_doc1a.reset_mock()
+        mock_doc1b.reset_mock()
+        m2m_relation.all.reset_mock()
+
+        Queryset1 = Mock(name="queryset1")
+        Queryset1.__iter__ = Mock(
+                return_value=iter([mock_doc1a, mock_doc1b]))
+        Queryset2 = Mock(name="queryset2")
+        Queryset2.__iter__ = Mock(
+                return_value=iter([mock_doc1b]))
+
+
+        m2m_relation.all.return_value = Queryset1
+        Queryset1.exclude.return_value = Queryset2
+
+        doc = Doc2({'id': 1, 'col1':[{'id':1}]})
+        doc.save()
+
+        m2m_relation.get.assert_called_once_with(id=1)
+        eq_(True, mock_doc1b.delete.called)
+
