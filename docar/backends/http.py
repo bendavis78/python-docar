@@ -1,9 +1,18 @@
+""" http backend for docar
+
+The http backend constructs JSON messages from the documents and sends them to
+an API endpoint. It can receive again JSON messages and construct documents
+from it. Its meant to be complimentary used with docar on the server. A
+document send from the server to the client with document.to_json() should have
+the right format to be understood by this backend.
+
+"""
 import json
 import requests
 from requests.auth import HTTPBasicAuth
 
 from docar.fields import ForeignDocument, CollectionField
-from docar.exceptions import HttpBackendError
+from docar.exceptions import HttpBackendError, BackendDoesNotExist
 
 
 class HttpBackendManager(object):
@@ -97,8 +106,16 @@ class HttpBackendManager(object):
             return False
 
     def fetch(self, document, *args, **kwargs):
+        """Fetch the resource as a JSON message from an HTTP endpoint.
+
+        It requests the resource using HTTP GET. A JSON message is expected and
+        parsed. If ``username`` and ``password`` are specified, it can use HTTP
+        basic authentication.
+        """
         params = {}
         self.kwargs = kwargs
+
+        # If we have HTTP basic auth, you can apply username and password
         if 'username' in kwargs and 'password' in kwargs:
             # we enable authentication
             self.username = kwargs['username']
@@ -107,17 +124,25 @@ class HttpBackendManager(object):
             params['auth'] = auth
         if self.SSL_CERT:
             params['verify'] = self.SSL_CERT
-        response = requests.get(url=self._get_uri('get', document), **params)
 
+        # Make the http request
+        #FIXME: Needs some exception handling probably
+        response = requests.get(url=self._get_uri('get', document), **params)
         self.response = response
 
-        # FIXME: check if its a 404, then raise BackendDoesNotExist
+        # If the response is a 404, than the resource couldn't be found
+        if response.status_code == 404:
+            raise BackendDoesNotExist
+
+        # Responses with a code of 4XX or 5XX are raising an error
         if (response.status_code > 399) and (response.status_code < 599):
             # we catch an error
             raise HttpBackendError(response.status_code,
                     response.content)
+
         # serialize from json and return a python dict
         if self.response.content:
+            #FIXME: Handle a ValueError in case its not valid JSON
             self.instance = json.loads(self.response.content)
             return self._to_dict(document)
         else:
