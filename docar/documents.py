@@ -359,9 +359,10 @@ class Document(object):
         errors = {}
 
         for field in self._meta.local_fields:
-            if isinstance(getattr(self, field.name), type(None)):
-                continue
             try:
+                if (isinstance(getattr(self, field.name), type(None))
+                        and field.optional):
+                    continue
                 if isinstance(field, ForeignDocument):
                     document = getattr(self, field.name)
                     try:
