@@ -187,21 +187,22 @@ class HttpBackendManager(object):
         if not hasattr(self, 'response'):
             try:
                 document.fetch(*args, **kwargs)
-            except HttpBackendError as e:
-                if e[0] == 404:
-                    # we create a new resource
-                    response = requests.post(
-                        url=self._get_uri('post', document),
-                        **params)
-                    if response.status_code > 399 and \
-                            response.status_code < 599:
-                        # we catch an error
-                        raise HttpBackendError(response.status_code,
-                                response.content)
-                    return
-                else:
-                    # Its some other error, so we just raise it again.
-                    raise e
+            except BackendDoesNotExist:
+                response = requests.post(
+                    url=self._get_uri('post', document),
+                    **params)
+                if response.status_code > 399 and \
+                        response.status_code < 599:
+                    # we catch an error
+                    raise HttpBackendError(response.status_code,
+                            response.content)
+                return
+            # except HttpBackendError as e:
+            #     if e[0] == 404:
+            #         # we create a new resource
+            #     else:
+            #         # Its some other error, so we just raise it again.
+            #         raise e
         # We update an existing resource
         response = requests.put(
                 url=self._get_uri('put', document),
