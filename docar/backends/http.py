@@ -188,6 +188,9 @@ class HttpBackendManager(object):
             try:
                 document.fetch(*args, **kwargs)
             except BackendDoesNotExist:
+                # If the resource hasn't been found, we assume we create a new
+                # one, and make a post request. Otherwise we skip to a put
+                # request.
                 response = requests.post(
                     url=self._get_uri('post', document),
                     **params)
@@ -197,12 +200,6 @@ class HttpBackendManager(object):
                     raise HttpBackendError(response.status_code,
                             response.content)
                 return
-            # except HttpBackendError as e:
-            #     if e[0] == 404:
-            #         # we create a new resource
-            #     else:
-            #         # Its some other error, so we just raise it again.
-            #         raise e
         # We update an existing resource
         response = requests.put(
                 url=self._get_uri('put', document),

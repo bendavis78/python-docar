@@ -158,6 +158,7 @@ class Document(object):
 
         self._context = context
         self._from_dict(data)
+        self.bound = True
 
     def _to_dict(self):
         """Return the document as a python dictionary. This method recursively
@@ -201,7 +202,7 @@ class Document(object):
                 Document = field.Document
                 # Lets create a new relation
                 document = Document(value, context=self._context)
-                document.bound = True
+                #document.bound = True
                 setattr(self, item, document)
             elif isinstance(value, list):
                 # a collection
@@ -363,13 +364,13 @@ class Document(object):
                 if (isinstance(getattr(self, field.name), type(None))
                         and field.optional):
                     continue
-                if isinstance(field, ForeignDocument):
+                elif isinstance(field, ForeignDocument):
                     document = getattr(self, field.name)
                     try:
                         document.validate()
                     except ValidationError, e:
                         if field.optional and not document.bound:
-                            pass
+                            continue
                         else:
                             raise e
                 elif isinstance(field, CollectionField):

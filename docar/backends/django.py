@@ -127,7 +127,10 @@ class DjangoBackendManager(object):
                     doc.fetch()
                 except BackendDoesNotExist:
                     #FIXME: make sure it doesn't throw an exception
-                    doc.save()
+                    if field.optional and not doc.bound:
+                        continue
+                    else:
+                        doc.save()
 
                 instance = doc._backend_manager.instance
                 doc_state[name] = instance
@@ -187,7 +190,6 @@ class DjangoBackendManager(object):
                         del(doc_state[defered_name])
                     elif (hasattr(field, 'Document')
                             and defered_name in doc_state):
-                        print doc_state[defered_name]
                         document = field.Document(doc_state[defered_name])
                         document.save()
                         doc_state[defered_name] = document._backend_manager.instance
