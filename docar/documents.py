@@ -238,7 +238,7 @@ class Document(object):
                 #data[item] = value
                 if field.inline:
                     # we render the field inline
-                    data[item] = document._to_dict()
+                    data[item] = document.render()
                 else:
                     data[item] = {
                             'rel': 'related',
