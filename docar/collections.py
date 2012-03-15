@@ -42,6 +42,18 @@ class Collection(object):
             self.collection_set.append(doc)
             self.bound = True
 
+    def delete(self, identifier):
+        """Delete a document from the collection. Use a dict to specify the
+        right document."""
+        new_collection = []
+        for doc in self.collection_set:
+            doc_id = doc._identifier_state()
+            for k, v in identifier.iteritems():
+                if v != doc_id[k]:
+                    new_collection.append(doc)
+
+        self.collection_set = new_collection
+
     def fetch_all(self, query_list=[]):
         # FIXME: Make this a method to run a fetch command on all documents in
         # the collection set
