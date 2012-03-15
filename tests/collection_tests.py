@@ -79,6 +79,23 @@ class when_a_collection_gets_instantiated(unittest.TestCase):
         eq_(1, len(newspaper.collection_set))
         eq_([doc1], newspaper.collection_set)
 
+    def it_can_delete_elements_from_its_set(self):
+        doc1 = Article({'id': 1, 'name': 'doc1'})
+        doc2 = Article({'id': 2, 'name': 'doc2'})
+        doc3 = Article({'id': 3, 'name': 'doc3'})
+        newspaper = NewsPaper()
+
+        newspaper.collection_set= [doc1, doc2, doc3]
+
+        eq_(3, len(newspaper.collection_set))
+
+        # We remove the first element
+        newspaper.delete({'id': 2})
+        eq_(2, len(newspaper.collection_set))
+        eq_(True, doc1 in newspaper.collection_set)
+        eq_(True, doc3 in newspaper.collection_set)
+        eq_(False, doc2 in newspaper.collection_set)
+
     def it_doesnt_add_instances_to_the_collection_that_are_not_documents(self):
         class A(object):
             pass
