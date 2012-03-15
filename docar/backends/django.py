@@ -115,6 +115,7 @@ class DjangoBackendManager(object):
                 # name of the field (after the map() method) and the actual m2m
                 # relation
                 m2m_relations.append((field, name, getattr(document, name)))
+
                 # and remove it from the state dict to not save it now
                 del(doc_state[name])
             elif hasattr(field, 'Document'):
@@ -164,11 +165,16 @@ class DjangoBackendManager(object):
     def _save_m2m_relations(self, instance, m2m_relations):
         # set the m2m relations
         defered_m2m = []
+
         for field, local_name, collection in m2m_relations:
             m2m = getattr(instance, local_name)
             # We store all current m2m items so that we can match it against
             # the current collection and remove any excess items at the end
+            # Querysets are evaluated lazy. So by accesing the first element
+            # we force the actual db lookup.
             current_m2m_items = m2m.all()
+            if len(current_m2m_items) > 0:
+                current_m2m_items[0]
 
             # We dont bother about this collection if its empty
             if len(collection.collection_set) < 1:
@@ -216,6 +222,10 @@ class DjangoBackendManager(object):
                             **doc._identifier_state())
                 except model.DoesNotExist:
                     inst = m2m.create(**doc_state)
+                    # I have to add this otherwise the newly created model
+                    # instance gets deleted below again.
+                    current_m2m_items = current_m2m_items.exclude(
+                            **doc._identifier_state())
 
                 # now recursively add the nested collections
                 if len(defered_m2m) > 0:
