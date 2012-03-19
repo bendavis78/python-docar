@@ -61,6 +61,7 @@ class HttpBackendManager(object):
                 # Otherwise set the value of the field from the retrieved model
                 # object
                 data[field.name] = instance[field.name]
+
         return data
 
     def _get_collection(self, field, context={}):

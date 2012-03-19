@@ -202,7 +202,6 @@ class Document(object):
                 Document = field.Document
                 # Lets create a new relation
                 document = Document(value, context=self._context)
-                #document.bound = True
                 setattr(self, item, document)
             elif isinstance(value, list):
                 # a collection
