@@ -205,7 +205,9 @@ class Document(object):
                 setattr(self, item, document)
             elif isinstance(value, list):
                 # a collection
-                collection = getattr(self, item)
+                field = [f for f in self._meta.local_fields
+                        if f.name == item][0]
+                collection = field.Collection()
                 collection.collection_set = []
                 Document = collection.document
                 for elem in value:
@@ -288,21 +290,23 @@ class Document(object):
             if hasattr(self, "fetch_%s_field" % item):
                 fetch_field = getattr(self, "fetch_%s_field" % item)
                 value = fetch_field(value)
+                # obj[item] = value
             if isinstance(value, dict):
+                field = [f for f in self._meta.related_fields
+                        if f.name == item][0]
                 # Lets create a new relation
-                document = getattr(self, item)
-                value = document._fetch(value)
-                data[item] = value
+                document = field.Document(value, context=self._context)
+                data[item] = document._fetch(value)
             elif isinstance(value, list):
                 # we fetch a collection
-                collection = getattr(self, item)
-                collection.collection_set = []
+                field = [f for f in self._meta.local_fields
+                        if f.name == item][0]
+                collection = field.Collection()
+                data[item] = []
                 Document = collection.document
                 for elem in value:
                     document = Document(elem, context=self._context)
-                    document._fetch(elem)
-                    collection.add(document)
-                data[item] = collection
+                    data[item].append(document._fetch(elem))
             else:
                 data[item] = value
 
