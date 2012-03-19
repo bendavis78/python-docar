@@ -285,12 +285,20 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         # I have to mock a queryset for each collection, cause I run an exclude
         # on it everytime I iterate through an item of the collection
         qs_col = Mock(name="queryset")
+        qs_col.__len__ = Mock(return_value=2)
+        qs_col.__getitem__ = Mock()
         qs_col.__iter__ = Mock(
                 return_value=iter([mock_doc1_1, mock_doc1_2]))
+
         qs_cola = Mock(name="queryset-exclude_cola")
+        qs_cola.__len__ = Mock(return_value=1)
+        qs_cola.__getitem__ = Mock()
         qs_cola.__iter__ = Mock(return_value=iter([mock_doc1_2]))
+
         qs_col.exclude.return_value = qs_cola
         qs_colb = Mock(name="queryset-exclude_colb")
+        qs_colb.__len__ = Mock(return_value=1)
+        qs_colb.__getitem__ = Mock()
         qs_colb.__iter__ = Mock(return_value=iter([]))
         qs_cola.exclude.return_value = qs_colb
 
@@ -502,6 +510,8 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         # I have to mock a queryset for each collection, cause I run an exclude
         # on it everytime I iterate through an item of the collection
         qs_doc2 = Mock(name="queryset2")
+        qs_doc2.__len__ = Mock(return_value=1)
+        qs_doc2.__getitem__ = Mock()
         qs_doc2.__iter__ = Mock(
                 return_value=iter([mock_doc2]))
         qs_doc2a = Mock(name="queryset-exclude_doc2")
@@ -517,9 +527,14 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         mock_doc1.id = 3
 
         qs_doc1 = Mock(name="queryset1")
+        qs_doc1.__len__ = Mock(return_value=1)
+        qs_doc1.__getitem__ = Mock()
         qs_doc1.__iter__ = Mock(
                 return_value=iter([mock_doc1]))
+
         qs_doc1a = Mock(name="queryset-exclude_doc1")
+        qs_doc1a.__len__ = Mock(return_value=0)
+        qs_doc1a.__getitem__ = Mock()
         qs_doc1a.__iter__ = Mock(return_value=iter([]))
         qs_doc1.exclude.return_value = qs_doc1a
 
@@ -667,9 +682,13 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         m2m_relation.all.reset_mock()
 
         Queryset1 = Mock(name="queryset1")
+        Queryset1.__len__ = Mock(return_value=2)
+        Queryset1.__getitem__ = Mock()
         Queryset1.__iter__ = Mock(
                 return_value=iter([mock_doc1a, mock_doc1b]))
         Queryset2 = Mock(name="queryset2")
+        Queryset2.__len__ = Mock(return_value=1)
+        Queryset2.__getitem__ = Mock()
         Queryset2.__iter__ = Mock(
                 return_value=iter([mock_doc1b]))
 
