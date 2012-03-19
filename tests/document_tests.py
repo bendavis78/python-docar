@@ -1027,3 +1027,49 @@ class when_a_document_contains_a_collection_field(unittest.TestCase):
 
         ok_(isinstance(doc.col, Col))
         eq_(2, len(doc.col.collection_set))
+
+    def it_can_create_nested_collections_from_a_dict(self):
+        MockModel = Mock()
+        ColMockModel = Mock()
+        NestedDocModel = Mock()
+
+        class NestedDoc(Document):
+            name = fields.StringField()
+
+            class Meta:
+                model = NestedDocModel
+                identifier = 'name'
+
+        class NestedCol(Collection):
+            document = NestedDoc
+
+        class ColDoc(Document):
+            id = fields.NumberField()
+            nested_col = fields.CollectionField(NestedCol)
+
+            class Meta:
+                model = ColMockModel
+
+        class Col(Collection):
+            document = ColDoc
+
+        class Doc(Document):
+            id = fields.NumberField()
+            col = fields.CollectionField(Col)
+
+            class Meta:
+                model = MockModel
+
+        request = {
+                "id": 1,
+                "col": [
+                    {"id": 2,
+                        "nested_col": [{"name": "nested1"}]},
+                    {"id": 3,
+                        "nested_col": [{"name": "nested2"}]}
+                    ]
+                }
+
+        doc = Doc(request)
+
+        eq_(request, doc._to_dict())
