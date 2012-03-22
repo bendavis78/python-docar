@@ -49,7 +49,7 @@ class Field(object):
         if ((value is None or value is ""
             or isinstance(value, ForeignDocument)
             or isinstance(value, CollectionField))
-                and not self.optional):
+                and (not self.optional and self.default is NOT_PROVIDED)):
             raise ValidationError("Field must be set.")
         #TODO: blank values
         #TODO: choices
@@ -73,7 +73,7 @@ class BooleanField(Field):
         super(BooleanField, self).__init__(*args, **kwargs)
 
     def to_python(Self, value):
-        if isinstance(value, bool) or isinstance(value, type(None)):
+        if isinstance(value, bool):
             return value
         elif value in ('t', 'True', 'true', 1):
             return True
@@ -104,10 +104,12 @@ class NumberField(Field):
         super(NumberField, self).__init__(*args, **kwargs)
 
     def to_python(self, value):
-        if isinstance(value, int) or value is None:
+        if isinstance(value, int):
             return value
-        else:
-            raise ValidationError('Must be an integer.')
+        elif value is None:
+            if self.default is not NOT_PROVIDED:
+                return self.default
+        raise ValidationError('Must be an integer.')
 
 
 ## Derived Basic Types

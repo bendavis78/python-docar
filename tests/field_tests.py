@@ -82,7 +82,7 @@ class when_an_integer_field_gets_instantiated(unittest.TestCase):
 
     def it_can_turn_itself_to_the_right_datatype(self):
         eq_(True, isinstance(self.integer_field.to_python(0), int))
-        eq_(None, self.integer_field.to_python(None))
+        eq_(1, self.integer_field.to_python(None))
         assert_raises(exceptions.ValidationError, self.integer_field.to_python,
                 'str')
 
@@ -90,8 +90,7 @@ class when_an_integer_field_gets_instantiated(unittest.TestCase):
         eq_(1, self.integer_field.clean(1))
         assert_raises(exceptions.ValidationError,
                 self.integer_field.to_python, 'str')
-        assert_raises(exceptions.ValidationError,
-                self.integer_field.clean, None)
+        eq_(1, self.integer_field.clean(None))
 
 
 

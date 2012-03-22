@@ -595,6 +595,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             pub = fields.BooleanField(optional=True)
             string = fields.StaticField(value="a_string")
             doc1 = fields.ForeignDocument(Doc1)
+            another = fields.StringField(default="")
 
         class Meta:
             model = MockModel
