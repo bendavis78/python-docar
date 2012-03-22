@@ -306,6 +306,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         mock_doc2.col.__dict__['model'] = Doc1Model
         mock_doc2.col.get.side_effect = se
         mock_doc2.col.get.return_value = True
+        mock_doc2.col.all.return_value = qs_col
 
         doc = Doc2(request)
 
