@@ -173,12 +173,16 @@ class DjangoBackendManager(object):
             # Querysets are evaluated lazy. So by accesing the first element
             # we force the actual db lookup.
             current_m2m_items = m2m.all()
+
             if len(current_m2m_items) > 0:
                 current_m2m_items[0]
 
-            # We dont bother about this collection if its empty
-            if len(collection.collection_set) < 1:
+            # We dont bother about this collection if its empty and has no
+            # existing instances
+            if (len(collection.collection_set) < 1
+                    and len(current_m2m_items) < 1):
                 continue
+
             m2m = getattr(instance, local_name)
             for doc in collection.collection_set:
                 doc_state = doc._save()
@@ -223,6 +227,12 @@ class DjangoBackendManager(object):
                 # now recursively add the nested collections
                 if len(defered_m2m) > 0:
                     self._save_m2m_relations(inst, defered_m2m)
+
+            # We delete any leftover item
+            if len(current_m2m_items) > 1:
+                for item in current_m2m_items:
+                    item.delete()
+
 
     def delete(self, document, **kwargs):
         try:

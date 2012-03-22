@@ -664,7 +664,12 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
         # and therefore creates a new model instance
         Model2.objects.get.return_value = mock_doc2
 
-        m2m_relation.all.return_value = [mock_doc1a, mock_doc1b]
+        Queryset = Mock(name="queryset")
+        Queryset.__len__ = Mock(return_value=2)
+        Queryset.__getitem__ = Mock()
+        Queryset.__iter__ = Mock(
+                return_value=iter([mock_doc1a, mock_doc1b]))
+        m2m_relation.all.return_value = Queryset
 
         doc = Doc2({'id': 1, 'col1':[]})
         doc.save()
