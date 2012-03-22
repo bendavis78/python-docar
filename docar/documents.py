@@ -384,7 +384,8 @@ class Document(object):
                     value = getattr(self, field.name)
                     if ((isinstance(value, type(None))
                             or (isinstance(value, str) and value in ""))
-                            and field.optional):
+                            and (field.optional
+                                or field.default != NOT_PROVIDED)):
                         # we don't validate optional fields that are not set
                         continue
                     field.clean(value)
