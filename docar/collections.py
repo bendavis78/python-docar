@@ -21,6 +21,7 @@ class Collection(object):
     """
     document = None
     bound = False
+    _context = {}
 
     def __init__(self, documents=None):
         if not self.document:

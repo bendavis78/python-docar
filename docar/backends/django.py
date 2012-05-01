@@ -114,7 +114,9 @@ class DjangoBackendManager(object):
                 # we defer m2m relationships to later, we need the field, the
                 # name of the field (after the map() method) and the actual m2m
                 # relation
-                m2m_relations.append((field, name, getattr(document, name)))
+                collection = getattr(document, name)
+                collection._context = document._context
+                m2m_relations.append((field, name, collection))
 
                 # and remove it from the state dict to not save it now
                 del(doc_state[name])
@@ -185,6 +187,10 @@ class DjangoBackendManager(object):
 
             m2m = getattr(instance, local_name)
             for doc in collection.collection_set:
+                if hasattr(collection, '_context'):
+                    doc._context = collection._context
+                else:
+                    doc._context = {}
                 doc_state = doc._save()
 
                 # Iterate all fields of this doc, to defere collections
@@ -207,6 +213,7 @@ class DjangoBackendManager(object):
                     elif (hasattr(field, 'Document')
                             and defered_name in doc_state):
                         document = field.Document(doc_state[defered_name])
+                        document._context = collection._context
                         document.save()
                         doc_state[defered_name] = document._backend_manager.instance
 
