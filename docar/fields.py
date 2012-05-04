@@ -123,6 +123,23 @@ class StaticField(StringField):
         super(StaticField, self).__init__(*args, **kwargs)
 
 
+class ChoicesField(StringField):
+    """A field that provides a set of choices to choose from."""
+    field_type = "choices"
+
+    def __init__(self, *args, **kwargs):
+        if not 'choices' in kwargs:
+            self.choices = []
+        else:
+            self.choices = kwargs['choices']
+            del(kwargs['choices'])
+
+    def to_python(self, value):
+        if value in self.choices:
+            return value
+        raise ValidationError('%s is not a valid choice.' % value)
+
+
 ## Structured Datatypes.
 class CollectionField(Field):
     """An ordered list of zero or more referenced documents."""

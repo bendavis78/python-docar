@@ -704,3 +704,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
 
         m2m_relation.get.assert_called_once_with(id=1)
         eq_(True, mock_doc1b.delete.called)
+
+    def it_can_supply_context_to_foreign_documents_within_nested_collections(self):
+        # FIXME: Add a test for this use case
+        pass
