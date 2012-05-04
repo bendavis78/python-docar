@@ -134,3 +134,18 @@ class when_a_collection_field_gets_instantiated(unittest.TestCase):
 
     def it_sets_the_collection_as_an_attribute(self):
         eq_("Collection", self.collection_field.Collection)
+
+
+class when_a_choices_field_gets_instantiated(unittest.TestCase):
+    def setUp(self):
+        self.choices_field = fields.ChoicesField(choices=['A', 'B'])
+
+    def it_sets_the_coices_as_an_attribute(self):
+        eq_(['A', 'B'], self.choices_field.choices)
+
+    def it_returns_the_correct_value_if_its_a_valid_choic(self):
+        eq_('A', self.choices_field.to_python('A'))
+
+    def it_raises_a_validation_error_if_its_not_a_valid_choice(self):
+        assert_raises(exceptions.ValidationError, self.choices_field.to_python,
+                'C')
