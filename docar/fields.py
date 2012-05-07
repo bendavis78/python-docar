@@ -133,6 +133,7 @@ class ChoicesField(StringField):
         else:
             self.choices = kwargs['choices']
             del(kwargs['choices'])
+
         super(ChoicesField, self).__init__(*args, **kwargs)
 
     def to_python(self, value):
