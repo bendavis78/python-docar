@@ -5,6 +5,7 @@ from bisect import bisect
 
 from .fields import (ForeignDocument,
         CollectionField,
+        StaticField,
         NOT_PROVIDED)
 
 from .backends import BackendManager
@@ -112,6 +113,8 @@ class DocumentBase(type):
                 setattr(new_class, field.name, document)
             elif field.default == NOT_PROVIDED:
                 setattr(new_class, field.name, None)
+            elif isinstance(field, StaticField):
+                setattr(new_class, field.name, field.value)
             else:
                 setattr(new_class, field.name, field.default)
 
@@ -190,6 +193,8 @@ class Document(object):
                 data[field.name] = []
                 for item in col.collection_set:
                     data[field.name].append(item._to_dict())
+            elif isinstance(field, StaticField):
+                data[field.name] = field.value
             else:
                 data[field.name] = getattr(self, field.name)
 
