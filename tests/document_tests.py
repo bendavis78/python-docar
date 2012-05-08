@@ -304,6 +304,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             name = fields.StringField()
 
             class Meta:
+                backend_type = 'django'
                 model = Model
 
         expected = {"id": 1}
@@ -320,6 +321,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             name = fields.StringField()
 
             class Meta:
+                backend_type = 'django'
                 model = Model
 
             def render_name_field(self, value):
@@ -385,6 +387,13 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_(True, hasattr(doc1, '_backend_manager'))
         eq_(DjangoBackendManager, type(doc1._backend_manager))
 
+    def it_can_also_not_have_a_backend_defined(self):
+        class Doc(Document):
+            id = fields.NumberField()
+
+        doc = Doc()
+        eq_(None, doc._backend_manager)
+
     def it_doesnt_render_optional_fields_that_are_set_to_none(self):
         DocModel = Mock(name='DocModel')
 
@@ -393,6 +402,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             name = fields.StringField(optional=True)
 
             class Meta:
+                backend_type = 'django'
                 model = DocModel
 
         mock_doc = {'id': 1, 'name': None}
@@ -577,6 +587,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             id = fields.NumberField()
 
             class Meta:
+                backend_type = 'django'
                 model = MockModel2
 
         class Col(Collection):
@@ -587,6 +598,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             col = fields.CollectionField(Col)
 
             class Meta:
+                backend_type = 'django'
                 model = MockModel1
 
         class Doc(Document):
@@ -597,8 +609,9 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             doc1 = fields.ForeignDocument(Doc1)
             another = fields.StringField(default="")
 
-        class Meta:
-            model = MockModel
+            class Meta:
+                backend_type = 'django'
+                model = MockModel
 
         doc = Doc()
         doc.doc1.fetch = Mock()
@@ -644,6 +657,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             pub = fields.BooleanField()
 
             class Meta:
+                backend_type = 'django'
                 model = MockModel2
 
             def save_pub_field(self):
@@ -658,6 +672,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             col = fields.CollectionField(Col)
 
             class Meta:
+                backend_type = 'django'
                 model = MockModel1
 
             def save_name_field(self):
@@ -668,6 +683,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             doc1 = fields.ForeignDocument(Doc1)
 
             class Meta:
+                backend_type = 'django'
                 model = MockModel
 
         doc = Doc({'id': 1, 'doc1': {'id': 1, 'name': 'name'}})
@@ -688,6 +704,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             pub = fields.BooleanField()
 
             class Meta:
+                backend_type = 'django'
                 model = MockModel2
 
             def fetch_pub_field(self, value):
@@ -702,6 +719,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             col = fields.CollectionField(Col)
 
             class Meta:
+                backend_type = 'django'
                 model = MockModel1
 
             def fetch_name_field(self, value):
@@ -712,6 +730,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             doc1 = fields.ForeignDocument(Doc1)
 
             class Meta:
+                backend_type = 'django'
                 model = MockModel
 
         obj= {'id': 1, 'doc1': {'id': 1, 'name': 'name',
@@ -818,6 +837,7 @@ class when_a_document_is_bound(unittest.TestCase):
 
             class Meta:
                 # Use the mocked django model
+                backend_type = 'django'
                 model = DjangoModel
 
         # create the mocked instance of the model

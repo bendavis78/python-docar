@@ -48,6 +48,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             name = fields.StringField()
 
             class Meta:
+                backend_type = 'django'
                 identifier = 'name'
                 model = Mock()
 
@@ -64,6 +65,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
 
             class Meta:
                 model = Doc2Model
+                backend_type = 'django'
                 identifier = 'name'
 
             def map_overwrite_field(self):
@@ -155,6 +157,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             id = fields.NumberField()
 
             class Meta:
+                backend_type = 'django'
                 model = DjangoModel
 
         doc = Doc({'id': 1})
@@ -207,6 +210,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             id = fields.NumberField()
 
             class Meta:
+                backend_type = 'django'
                 identifier = 'id'
                 model = OtherModel
 
@@ -218,6 +222,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             others = fields.CollectionField(OtherCollection)
 
             class Meta:
+                backend_type = 'django'
                 identifier = 'id'
                 model = DjangoModel
 
@@ -245,6 +250,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             id = fields.NumberField()
 
             class Meta:
+                backend_type = 'django'
                 model = Doc1Model
 
         class Doc1Col(Collection):
@@ -260,6 +266,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             col = fields.CollectionField(Doc1Col)
 
             class Meta:
+                backend_type = 'django'
                 model = Doc2Model
 
         request = {
@@ -326,6 +333,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             id = fields.NumberField()
 
             class Meta:
+                backend_type = 'django'
                 model = Doc1Model
 
         Doc2Model = Mock(name="doc2_model")
@@ -335,6 +343,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             doc1 = fields.ForeignDocument(Doc1)
 
             class Meta:
+                backend_type = 'django'
                 model = Doc2Model
 
         # First return an existing model instance
@@ -386,6 +395,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             id = fields.NumberField()
 
             class Meta:
+                backend_type = 'django'
                 model = Doc1Model
                 context = ['name']
 
@@ -396,6 +406,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             doc1 = fields.ForeignDocument(Doc1)
 
             class Meta:
+                backend_type = 'django'
                 model = Doc2Model
                 context = ['name']
 
@@ -437,6 +448,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             id = fields.NumberField()
 
             class Meta:
+                backend_type = 'django'
                 model = Doc1Model
 
         class Doc1Collection(Collection):
@@ -450,6 +462,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             doc1 = fields.CollectionField(Doc1Collection)
 
             class Meta:
+                backend_type = 'django'
                 model = Doc2Model
 
             def map_doc1_field(self):
@@ -465,6 +478,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             doc2 = fields.CollectionField(Doc2Collection)
 
             class Meta:
+                backend_type = 'django'
                 model = Doc3Model
 
         post_data = {
@@ -589,6 +603,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             name1 = fields.StringField()
 
             class Meta:
+                backend_type = 'django'
                 model = Model1
                 context = ['name1']
 
@@ -599,6 +614,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             doc1 = fields.ForeignDocument(Doc1)
 
             class Meta:
+                backend_type = 'django'
                 model = Model2
                 context = ['name1', 'name2']
 
@@ -634,6 +650,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             id = fields.NumberField()
 
             class Meta:
+                backend_type = 'django'
                 model = Model1
 
         class Col1(Collection):
@@ -644,6 +661,7 @@ class when_a_django_backend_manager_gets_instantiated(unittest.TestCase):
             col1 = fields.CollectionField(Col1)
 
             class Meta:
+                backend_type = 'django'
                 model = Model2
 
         # First return an existing model instance

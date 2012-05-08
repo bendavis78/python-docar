@@ -21,6 +21,7 @@ class Editor(Document):
     age = fields.NumberField()
 
     class Meta:
+        backend_type = 'django'
         model = EditorModel
         identifier = [
                 'first_name',
@@ -31,6 +32,7 @@ class Tag(Document):
     slug = fields.StringField()
 
     class Meta:
+        backend_type = 'django'
         model = TagModel
         identifier = 'slug'
 
@@ -47,6 +49,7 @@ class Article(Document):
     #published = fields.ChoiceField(choices=PUBLISH_CHOICES)
 
     class Meta:
+        backend_type = 'django'
         model = ArticleModel
 
 

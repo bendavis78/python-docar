@@ -32,7 +32,7 @@ class Options(object):
     def __init__(self, meta):
         # Initialize some default values
         self.model = None
-        self.backend_type = 'django'
+        self.backend_type = None
         self.identifier = ['id']
         # FIXME: Do some type checking
         self.excludes = []
@@ -116,10 +116,13 @@ class DocumentBase(type):
                 setattr(new_class, field.name, field.default)
 
         # Add the model manager if a model is set
-        new_class._backend_manager = BackendManager(
+        if not new_class._meta.backend_type:
+            new_class._backend_manager = None
+        else:
+            new_class._backend_manager = BackendManager(
                 new_class._meta.backend_type)
-        if new_class._meta.backend_type in 'django':
-            new_class._backend_manager._model = new_class._meta.model
+            if new_class._meta.backend_type in 'django':
+                new_class._backend_manager._model = new_class._meta.model
 
         return new_class
 

@@ -48,6 +48,7 @@ class when_a_collection_gets_instantiated(unittest.TestCase):
             id = fields.NumberField()
 
             class Meta:
+                backend_type = 'django'
                 model = DjangoModel
 
         class Col(Collection):
