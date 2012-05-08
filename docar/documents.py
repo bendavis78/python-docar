@@ -8,7 +8,7 @@ from .fields import (ForeignDocument,
         NOT_PROVIDED)
 
 from .backends import BackendManager
-from .exceptions import ValidationError
+from .exceptions import ValidationError, BackendDoesNotExist
 
 
 DEFAULT_NAMES = ('identifier', 'model', 'excludes', 'backend_type', 'context',
@@ -375,7 +375,17 @@ class Document(object):
                         if field.optional and not document.bound:
                             continue
                         else:
-                            raise e
+                            # In cases were want to reference already existing
+                            # documents, we will raise an validation error if
+                            # we reference the document only by identifier. So
+                            # lets fetch it t osee if this is the case
+                            try:
+                                document.fetch()
+                                #TODO: I blindly assume now that if a document
+                                # is retrieved from the backend it will
+                                # validate, so no need to do that again here.
+                            except BackendDoesNotExist:
+                                raise e
                 elif isinstance(field, CollectionField):
                     collection = getattr(self, field.name)
                     for document in collection.collection_set:

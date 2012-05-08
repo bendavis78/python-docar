@@ -601,6 +601,7 @@ class when_a_document_gets_instantiated(unittest.TestCase):
             model = MockModel
 
         doc = Doc()
+        doc.doc1.fetch = Mock()
 
         # A unbound document will fail in any way
         assert_raises(ValidationError, doc.validate)
@@ -618,9 +619,10 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         doc.id = "false string"
         assert_raises(ValidationError, doc.validate)
 
-        # foreign documents are validated too
+        # foreign documents are validated too only if it does not exist yet
         doc.id = 1
         doc.doc1.id = "false string"
+        doc.doc1.fetch.side_effect = BackendDoesNotExist
         assert_raises(ValidationError, doc.validate)
 
         # lets test for collections too
@@ -975,6 +977,37 @@ class when_a_document_contains_a_foreign_document_relation(unittest.TestCase):
         eq_(True, doc._meta.local_fields[1].optional)
 
         eq_({'id': 1}, doc._save())
+
+    def it_can_validate_a_document_even_if_referencing_an_existing_foreign_document(self):
+        DjangoModel = Mock()
+
+        class Other(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+
+            class Meta:
+                model = DjangoModel
+
+        OtherModel = Mock(name='OtherModel')
+
+        class Doc(Document):
+            id = fields.NumberField()
+            other = fields.ForeignDocument(Other)
+
+            class Meta:
+                model = OtherModel
+
+        doc = Doc({'id': 1, 'other': {'id': 2}})
+
+        doc.other.fetch = Mock()
+        doc.other.fetch.side_effect = BackendDoesNotExist
+
+        # If the fetch to the foreign document fails, it raises a validation
+        # error as expected
+        assert_raises(ValidationError, doc.validate)
+
+        doc.other.fetch.side_effect = None
+        ok_(doc.validate())
 
 
 class when_a_document_contains_a_collection_field(unittest.TestCase):
