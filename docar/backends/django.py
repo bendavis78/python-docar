@@ -133,7 +133,7 @@ class DjangoBackendManager(object):
                     if field.optional and not doc.bound:
                         continue
                     else:
-                        doc.save()
+                        doc.save(*args, **kwargs)
 
                 instance = doc._backend_manager.instance
                 doc_state[name] = instance
@@ -157,7 +157,7 @@ class DjangoBackendManager(object):
         # save the model to the backend
         #FIXME: Do some exception handling, maybe a full_clean first
 
-        instance.save()
+        instance.save(*args, **kwargs)
 
         self.instance = instance
 
