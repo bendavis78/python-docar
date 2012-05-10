@@ -365,7 +365,7 @@ class Document(object):
                 'href': self.uri()}
         return data
 
-    def validate(self):
+    def validate(self, *args, **kwargs):
         """Validate the state of the document and throw a ``ValidationError``
         if validation fails."""
         errors = {}
@@ -388,7 +388,7 @@ class Document(object):
                             # we reference the document only by identifier. So
                             # lets fetch it t osee if this is the case
                             try:
-                                document.fetch()
+                                document.fetch(*args, **kwargs)
                                 #TODO: I blindly assume now that if a document
                                 # is retrieved from the backend it will
                                 # validate, so no need to do that again here.
@@ -417,7 +417,7 @@ class Document(object):
     def save(self, *args, **kwargs):
         """Save the document to a backend. Any arguments given to this methos
         is used when calling the underlying backend method."""
-        self.validate()
+        self.validate(*args, **kwargs)
 
         self._backend_manager.save(self, *args, **kwargs)
 
