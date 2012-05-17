@@ -65,6 +65,12 @@ class Collection(object):
             doc.fetch()
             self.add(doc)
 
+    def _from_queryset(self, qs):
+        for model in qs:
+            doc = self.document()
+            doc._from_model(model)
+            self.add(doc)
+
     def _render(self):
         data = []
         for document in self.collection_set:

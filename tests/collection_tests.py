@@ -1,5 +1,4 @@
 import unittest
-import json
 
 from nose.tools import eq_, assert_raises
 from mock import Mock
@@ -10,8 +9,7 @@ from docar.collections import Collection
 from docar.exceptions import CollectionNotBound
 
 # import the sample app
-from app import Article, Editor, NewsPaper
-from app import EditorModel
+from app import Article, NewsPaper
 
 
 class when_a_collection_gets_instantiated(unittest.TestCase):
@@ -183,3 +181,31 @@ class when_a_collection_gets_instantiated(unittest.TestCase):
             }
 
         eq_(expected, collection.render())
+
+    def it_can_fill_itself_from_a_queryset(self):
+        class Doc(Document):
+            id = fields.NumberField()
+
+        class Col(Collection):
+            document = Doc
+
+        model1 = Mock()
+        model2 = Mock()
+        model1.id = 1
+        model2.id = 2
+
+        col = Col()
+
+        eq_(0, len(col.collection_set))
+
+        col._from_queryset([model1, model2])
+
+        eq_(2, len(col.collection_set))
+
+        doc1 = col.collection_set[0]
+        doc2 = col.collection_set[1]
+
+        eq_(True, isinstance(doc1, Doc))
+        eq_(True, isinstance(doc2, Doc))
+        eq_(1, doc1.id)
+        eq_(2, doc2.id)

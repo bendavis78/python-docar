@@ -229,6 +229,35 @@ class Document(object):
             else:
                 setattr(self, item, value)
 
+    def _from_model(self, model):
+        """Fill the document from a django model."""
+        #FIXME: Add some type checking whether `model` truly is a django model
+        for field in self._meta.local_fields:
+            name = field.name
+            mapped_name = name
+
+            # We map document field names to names of fields on the backend
+            # models.
+            if hasattr(self, "map_%s_field" % name):
+                map_method = getattr(self, "map_%s_field" % name)
+                mapped_name = map_method()
+
+            # lets fast forward null values
+            if not getattr(model, name):
+                continue
+            elif isinstance(field, ForeignDocument):
+                related_model = getattr(model, mapped_name)
+                foreign_document = getattr(self, name)
+                foreign_document._from_model(related_model)
+                setattr(self, name, foreign_document)
+            elif isinstance(field, CollectionField):
+                m2m = getattr(model, mapped_name)
+                collection = getattr(self, name)
+                collection._from_queryset(m2m.all())
+                setattr(self, name, collection)
+            elif hasattr(model, name):
+                setattr(self, name, getattr(model, mapped_name))
+
     def _render(self, obj):
         data = {}
 

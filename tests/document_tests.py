@@ -753,50 +753,66 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
     def it_can_initialize_from_a_django_model(self):
         MockModel = Mock()
-        # MockModel1 = Mock()
-        # MockModel2 = Mock()
+        MockModel1 = Mock()
+        MockModel2 = Mock()
 
-        # class Doc2(Document):
-        #     id = fields.NumberField()
-        #     pub = fields.BooleanField()
+        class Doc2(Document):
+            id = fields.NumberField()
 
-        #     class Meta:
-        #         backend_type = 'django'
-        #         model = MockModel2
+            class Meta:
+                backend_type = 'django'
+                model = MockModel2
 
-        #     def fetch_pub_field(self, value):
-        #         return False
+        class Col(Collection):
+            document = Doc2
 
-        # class Col(Collection):
-        #     document = Doc2
+        class Doc1(Document):
+            id = fields.NumberField()
+            name = fields.StringField()
+            col = fields.CollectionField(Col)
 
-        # class Doc1(Document):
-        #     id = fields.NumberField()
-        #     name = fields.StringField()
-        #     col = fields.CollectionField(Col)
+            class Meta:
+                backend_type = 'django'
+                model = MockModel1
 
-        #     class Meta:
-        #         backend_type = 'django'
-        #         model = MockModel1
-
-        #     def fetch_name_field(self, value):
-        #         return "name_field"
+            def fetch_name_field(self, value):
+                return "name_field"
 
         class Doc(Document):
             id = fields.NumberField()
-            # doc1 = fields.ForeignDocument(Doc1)
+            name = fields.StringField()
+            doc1 = fields.ForeignDocument(Doc1)
+
+            def map_name_field(self):
+                return "someother"
 
             class Meta:
                 backend_type = 'django'
                 model = MockModel
 
+        model1 = Mock()
+        model1.id = 2
+        model1.name = 'doc1'
+
+        col1 = Mock()
+        col2 = Mock()
+        col1.id = 1
+        col2.id = 2
+
+        model1.col.all.return_value = [col1, col2]
+
         model = Mock()
         model.id = 1
+        model.someother = 'string'
+        model.doc1 = model1
 
         doc = Doc()
         doc._from_model(model)
 
         eq_(1, doc.id)
+        eq_('string', doc.name)
+        eq_(2, doc.doc1.id)
+        eq_('doc1', doc.doc1.name)
 
 
 class when_a_document_inherits_from_another_document(unittest.TestCase):
