@@ -242,21 +242,27 @@ class Document(object):
                 map_method = getattr(self, "map_%s_field" % name)
                 mapped_name = map_method()
 
-            # lets fast forward null values
-            if not getattr(model, name):
+            # skip fields that are not set on the model
+            if not getattr(model, mapped_name):
                 continue
-            elif isinstance(field, ForeignDocument):
+
+            if isinstance(field, ForeignDocument):
                 related_model = getattr(model, mapped_name)
-                foreign_document = getattr(self, name)
+                foreign_document = field.Document({},
+                        context=self._get_context())
                 foreign_document._from_model(related_model)
                 setattr(self, name, foreign_document)
+
             elif isinstance(field, CollectionField):
                 m2m = getattr(model, mapped_name)
-                collection = getattr(self, name)
+                collection = field.Collection()
                 collection._from_queryset(m2m.all())
                 setattr(self, name, collection)
-            elif hasattr(model, name):
+
+            elif hasattr(model, mapped_name):
                 setattr(self, name, getattr(model, mapped_name))
+
+        self.bound = True
 
     def _render(self, obj):
         data = {}

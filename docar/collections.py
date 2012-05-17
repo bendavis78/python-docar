@@ -72,7 +72,9 @@ class Collection(object):
             self.add(doc)
 
     def _render(self):
+        #FIXME: Deprecated
         data = []
+
         for document in self.collection_set:
             item = {"rel": "item"}
 
@@ -106,6 +108,7 @@ class Collection(object):
 
     def _to_dict(self):
         data = []
+
         for document in self.collection_set:
             data.append(document._to_dict())
 
@@ -124,8 +127,3 @@ class Collection(object):
 
     def to_json(self):
         return json.dumps(self.to_python())
-
-    def add_from_queryset(self, qs):
-        """Take a django queryset as argument and add each model as a
-        document."""
-        pass
