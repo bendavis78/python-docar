@@ -751,14 +751,52 @@ class when_a_document_gets_instantiated(unittest.TestCase):
         eq_('name_field', doc.doc1.name)
         eq_(1, len(doc.doc1.col.collection_set))
 
+    def it_can_initialize_from_a_django_model(self):
+        MockModel = Mock()
+        # MockModel1 = Mock()
+        # MockModel2 = Mock()
 
-# class when_a_representation_is_parsed(unittest.TestCase):
-#     def setUp(self):
-#         self.basket = FruitBasket(BASKET)
-# 
-#     def it_has_the_fields_bound(self):
-#         eq_(True, self.basket.is_rotten)
-#         eq_('Lovely Basket', self.basket.name)
+        # class Doc2(Document):
+        #     id = fields.NumberField()
+        #     pub = fields.BooleanField()
+
+        #     class Meta:
+        #         backend_type = 'django'
+        #         model = MockModel2
+
+        #     def fetch_pub_field(self, value):
+        #         return False
+
+        # class Col(Collection):
+        #     document = Doc2
+
+        # class Doc1(Document):
+        #     id = fields.NumberField()
+        #     name = fields.StringField()
+        #     col = fields.CollectionField(Col)
+
+        #     class Meta:
+        #         backend_type = 'django'
+        #         model = MockModel1
+
+        #     def fetch_name_field(self, value):
+        #         return "name_field"
+
+        class Doc(Document):
+            id = fields.NumberField()
+            # doc1 = fields.ForeignDocument(Doc1)
+
+            class Meta:
+                backend_type = 'django'
+                model = MockModel
+
+        model = Mock()
+        model.id = 1
+
+        doc = Doc()
+        doc._from_model(model)
+
+        eq_(1, doc.id)
 
 
 class when_a_document_inherits_from_another_document(unittest.TestCase):

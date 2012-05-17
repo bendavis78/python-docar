@@ -117,4 +117,9 @@ class Collection(object):
         return data
 
     def to_json(self):
-        return json.dumps(self._render())
+        return json.dumps(self.to_python())
+
+    def add_from_queryset(self, qs):
+        """Take a django queryset as argument and add each model as a
+        document."""
+        pass
