@@ -205,8 +205,12 @@ class Document(object):
         also related documents and collections from a dictionary input."""
         for item, value in obj.iteritems():
             if isinstance(value, dict):
-                field = [f for f in self._meta.related_fields
-                        if f.name == item][0]
+                fields = [f for f in self._meta.related_fields
+                        if f.name == item]
+                if len(fields) > 0:
+                    field = fields[0]
+                else:
+                    continue
                 Document = field.Document
                 # Lets create a new relation
                 document = Document(value, context=self._context)
