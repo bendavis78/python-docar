@@ -81,10 +81,38 @@ class Collection(object):
 
         return data
 
+    def render(self):
+        data = {
+                'size': len(self.collection_set),
+                }
+        items = []
+
+        for document in self.collection_set:
+            item = document.to_python()
+            #we change the relation attribute of this document
+            if 'link' in item:
+                item['link']['rel'] = 'item'
+            items.append(item)
+
+        data['items'] = items
+
+        return data
+
     def _to_dict(self):
         data = []
         for document in self.collection_set:
             data.append(document._to_dict())
+
+        return data
+
+    def to_python(self):
+        data = self.render()
+
+        if hasattr(self, 'uri'):
+            data['link'] = {
+                'rel': 'self',
+                'href': self.uri()
+                }
 
         return data
 

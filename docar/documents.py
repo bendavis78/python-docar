@@ -260,7 +260,7 @@ class Document(object):
             elif isinstance(value, list):
                 # we render a collection
                 collection = getattr(self, item)
-                data[item] = collection._render()
+                data[item] = collection.render()
             else:
                 data[item] = value
 

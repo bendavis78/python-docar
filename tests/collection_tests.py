@@ -107,56 +107,79 @@ class when_a_collection_gets_instantiated(unittest.TestCase):
         newspaper.add(A())
         eq_(0, len(newspaper.collection_set))
 
-    def it_can_render_to_a_python_list(self):
-        #prepare the setup
-        mock_editor = Mock()
-        mock_editor.id = 1
-        mock_editor.age = 31
-        mock_editor.first_name = 'Christo'
-        mock_editor.last_name = 'Buschek'
-        mock_editor.get_absolute_url.return_value = \
-                "http://localhost/editor/1/"
-
-        EditorModel.objects.get.return_value = mock_editor
-
-        MockModel = Mock()
-
-        class MockDoc(Document):
+    def it_can_turn_its_items_into_a_dict(self):
+        class Doc(Document):
             id = fields.NumberField()
-            name = fields.StringField()
-            editor = fields.ForeignDocument(Editor)
 
-            class Meta:
-                model = MockModel
+        class Col(Collection):
+            document = Doc
+
+        doc1 = Doc({'id': 1})
+        doc2 = Doc({'id': 2})
+
+        collection = Col([doc1, doc2])
+
+        expected = [{'id': 1}, {'id': 2}]
+
+        eq_(expected, collection._to_dict())
+
+    def it_can_turn_itself_into_a_python_representation(self):
+        class Doc(Document):
+            id = fields.NumberField()
 
             def uri(self):
-                return "link"
+                return 'item_location'
 
-        mock_article1 = Mock()
-        mock_article1.id = 1
-        mock_article1.name = "Headline"
-        mock_article1.editor = mock_editor
+        class Col(Collection):
+            document = Doc
 
-        mock_article2 = Mock()
-        mock_article2.id = 2
-        mock_article2.name = "Headline"
-        mock_article2.editor = mock_editor
+            def uri(self):
+                return "collection_location"
 
-        article_list = [mock_article2, mock_article1]
+        doc1 = Doc({'id': 1})
+        doc2 = Doc({'id': 2})
 
-        def article_side_effect(*args, **kwargs):
-            return article_list.pop()
+        collection = Col([doc1, doc2])
 
-        MockModel.objects.get.side_effect = article_side_effect
+        expected = {
+            "size": 2,
+            "items": [
+                {'id': 1, 'link': {'rel': 'item', 'href': 'item_location'}},
+                {'id': 2, 'link': {'rel': 'item', 'href': 'item_location'}}
+                ],
+            "link": {
+                "rel": "self",
+                "href": "collection_location"
+                }
+            }
 
-        doc1 = MockDoc({'id': 1})
-        doc2 = MockDoc({'id': 2})
+        eq_(expected, collection.to_python())
 
-        newspaper = NewsPaper([doc1, doc2])
+    def it_can_render_the_whole_collection(self):
+        class Doc(Document):
+            id = fields.NumberField()
+            name = fields.StringField(render=False)
 
-        expected = [
-                {"rel": "item", "href": "link", "id": 1},
-                {"rel": "item", "href": "link", "id": 2},
+            def uri(self):
+                return 'item_location'
+
+        class Col(Collection):
+            document = Doc
+
+            def uri(self):
+                return "collection_location"
+
+        doc1 = Doc({'id': 1, 'name': 'something'})
+        doc2 = Doc({'id': 2, 'name': 'something'})
+
+        collection = Col([doc1, doc2])
+
+        expected = {
+            "size": 2,
+            "items": [
+                {'id': 1, 'link': {'rel': 'item', 'href': 'item_location'}},
+                {'id': 2, 'link': {'rel': 'item', 'href': 'item_location'}}
                 ]
+            }
 
-        eq_(expected, json.loads(newspaper.to_json()))
+        eq_(expected, collection.render())
