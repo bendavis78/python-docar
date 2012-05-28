@@ -56,7 +56,7 @@ class Field(object):
 
     def clean(self, value):
         if not self.validate:
-            return self.to_python(value)
+            return value
 
         value = self.to_python(value)
         self.validate_field(value)

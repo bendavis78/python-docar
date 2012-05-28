@@ -425,7 +425,7 @@ class Document(object):
                             # In cases were want to reference already existing
                             # documents, we will raise an validation error if
                             # we reference the document only by identifier. So
-                            # lets fetch it t osee if this is the case
+                            # lets fetch it to see if this is the case
                             try:
                                 document.fetch(*args, **kwargs)
                                 #TODO: I blindly assume now that if a document
@@ -454,7 +454,7 @@ class Document(object):
         return True
 
     def save(self, *args, **kwargs):
-        """Save the document to a backend. Any arguments given to this methos
+        """Save the document to a backend. Any arguments given to this method
         is used when calling the underlying backend method."""
         self.validate(*args, **kwargs)
 
