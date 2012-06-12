@@ -247,7 +247,7 @@ class Document(object):
                 mapped_name = map_method()
 
             # skip fields that are not set on the model
-            if not getattr(model, mapped_name):
+            if not hasattr(model, mapped_name):
                 continue
 
             if isinstance(field, ForeignDocument):
