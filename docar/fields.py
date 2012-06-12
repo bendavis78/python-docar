@@ -11,7 +11,8 @@ class Field(object):
     default_validators = []
 
     def __init__(self, default=NOT_PROVIDED, optional=False, context=[],
-            render=True, scaffold=True, validators=[], validate=True):
+            render=True, scaffold=True, validators=[], validate=True,
+            read_only=False):
         self.default = default
         self.optional = optional
         self.context = context
@@ -19,6 +20,7 @@ class Field(object):
         self.scaffold = scaffold
         self.validators = self.default_validators + validators
         self.validate = validate
+        self.read_only = read_only
 
         # Set the creation counter. Increment it for each field declaration
         self.creation_counter = Field.creation_counter

@@ -71,24 +71,6 @@ class Collection(object):
             doc._from_model(model)
             self.add(doc)
 
-    def _render(self):
-        #FIXME: Deprecated
-        data = []
-
-        for document in self.collection_set:
-            item = {"rel": "item"}
-
-            #FIXME: Design decision needed, if I enable this, I get into
-            # troubles when rendering related (m2m) instances and they lack the
-            # parent instance as select field.
-            #document.fetch()
-            item["href"] = document.uri()
-            for elem in document._meta.identifier:
-                item[elem] = getattr(document, elem)
-            data.append(item)
-
-        return data
-
     def render(self):
         data = {
                 'size': len(self.collection_set),

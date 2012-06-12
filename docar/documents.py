@@ -310,6 +310,10 @@ class Document(object):
         obj = self._to_dict()
 
         for item, value in obj.iteritems():
+            field = [f for f in self._meta.local_fields 
+                        if f.name == item][0]
+            if field.read_only:
+                continue
             if hasattr(self, "save_%s_field" % item):
                 # We apply a save field
                 save_field = getattr(self, "save_%s_field" % item)

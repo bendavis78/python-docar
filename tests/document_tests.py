@@ -694,6 +694,17 @@ class when_a_document_gets_instantiated(unittest.TestCase):
 
         eq_(expected, doc._save())
 
+    def it_removes_read_only_fields_from_the_save_state(self):
+        class Doc1(Document):
+            id = fields.NumberField()
+            name = fields.StringField(read_only=True)
+
+        doc = Doc1({'id': 1, 'name': 'docname'})
+
+        expected = {'id': 1}
+
+        eq_(expected, doc._save())
+
     def it_can_recursively_create_documents_from_a_fetch_state(self):
         MockModel = Mock()
         MockModel1 = Mock()
