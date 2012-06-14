@@ -270,6 +270,15 @@ Control whether to scaffold this field. Defaults to ``True``.
 If set to ``False`` the field gets ignored when the document gets rendered.
 Defaults to ``True``.
 
+``read_only``
+~~~~~~~~~~~~~
+
+.. py:attribute:: Field.read_only
+
+If set to ``True``, the field value will not be saved, whatever it is set to.
+The responsible backend manager will not have the value available. Defaults to
+``False``.
+
 ``inline``
 ~~~~~~~~~~
 
