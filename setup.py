@@ -20,7 +20,7 @@ if sys.version_info <= (2, 6):
 
 setup(
     name="docar",
-    version="0.5.3",
+    version="0.5.4",
     packages=['docar', 'docar.backends'],
     include_package_data=True,
     #zip_safe=False,  # Don't create egg files, Django cannot find templates
