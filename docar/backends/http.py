@@ -132,8 +132,9 @@ class HttpBackendManager(object):
         self.response = response
 
         # If the response is a 404, than the resource couldn't be found
-        if response.status_code == 404:
-            raise BackendDoesNotExist
+        # if response.status_code == 404:
+        #     raise BackendDoesNotExist(response.status_code,
+        #             response.
 
         # Responses with a code of 4XX or 5XX are raising an error
         if (response.status_code > 399) and (response.status_code < 599):
